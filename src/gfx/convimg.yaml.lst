@@ -1,0 +1,11 @@
+global_palette.h
+global_palette.c
+login_qr.h
+login_qr.c
+usb_connected.h
+usb_connected.c
+usb_disconnected.h
+usb_disconnected.c
+connecting.h
+connecting.c
+gfx.h

@@ -1,0 +1,39 @@
+palettes:
+  - name: global_palette
+    max-entries: 48
+    fixed-entries:
+      - color: {index: 0, r: 0, g: 0, b: 0}
+    images: automatic
+
+converts:
+  - name: login_qrcode
+    palette: global_palette
+    compress: zx0
+    images:
+      - login_qr.png
+  - name: usb_connected
+    palette: global_palette
+    compress: zx0
+    images:
+      - usb_connected.png
+  - name: usb_disconnected
+    palette: global_palette
+    compress: zx0
+    images:
+      - usb_disconnected.png
+  - name: connecting
+    palette: global_palette
+    compress: zx0
+    images:
+      - connecting.png
+
+outputs:
+  - type: c
+    include-file: gfx.h
+    palettes:
+      - global_palette
+    converts:
+      - login_qrcode
+      - usb_connected
+      - usb_disconnected
+      - connecting
