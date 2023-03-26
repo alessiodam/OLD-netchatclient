@@ -4,7 +4,7 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/tkbstudios/ti84pluscenet-calc']]])
+        checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/tkbstudios/ti84pluscenet-calc']]])
       }
     }
     
@@ -25,8 +25,8 @@ pipeline {
           
           withCredentials([usernamePassword(credentialsId: 'github-creds', passwordVariable: 'password', usernameVariable: 'username')]) {
             sh """
-              git config --global user.email "jenkins@jenkins.com"
-              git config --global user.name "Jenkins"
+              git config --global user.email "owner@tkbstudios.tk"
+              git config --global user.name "${username}"
               git add ${releaseFileName}
               git commit -m "Automated release for ${buildDate}"
               git push https://${password}@github.com/tkbstudios/ti84pluscenet-calc.git
