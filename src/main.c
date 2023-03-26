@@ -7,6 +7,13 @@
  *--------------------------------------
 */
 
+/*
+ *--------------Contributors--------------
+ * TIny_Hacker
+ *--------------------------------------
+*/
+
+
 #include <string.h>
 #include <sys/lcd.h>
 #include <keypadc.h>
