@@ -1,3 +1,5 @@
 titrek-calc
 .dccache
 .vscode
+bin
+obj

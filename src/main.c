@@ -41,6 +41,7 @@ gfx_sprite_t *usb_disconnected_sprite;
 gfx_sprite_t *connecting_sprite;
 
 /* DEFINE FUNCTIONS */
+void GFXspritesInit();
 void writeKeyFile();
 void ConnectingGFX();
 void NoKeyFileGFX();
@@ -113,19 +114,9 @@ static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_cal
 
 int main(void)
 {
-    /* Allocate space for the decompressed sprites */
-    /* Same as gfx_AllocSprite() */
-    login_qrcode_sprite = gfx_MallocSprite(login_qr_width, login_qr_height);
-    usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
-    usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
-    connecting_sprite = gfx_MallocSprite(connecting_width, connecting_height);
-
-    /* Decompress  sprite */
-    zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
-    zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
-    zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
-    zx0_Decompress(connecting_sprite, connecting_compressed);
-
+    /* SET GFX SPRITES */
+    GFXspritesInit();
+    
     /* GFX BEGIN */
     gfx_Begin();
 
@@ -245,6 +236,22 @@ void writeKeyFile()
       ti_Close(keyfile);
     }
   else { PrintError("FileIO error"); }
+}
+
+void GFXspritesInit()
+{
+    /* Allocate space for the decompressed sprites */
+    /* Same as gfx_AllocSprite() */
+    login_qrcode_sprite = gfx_MallocSprite(login_qr_width, login_qr_height);
+    usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
+    usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
+    connecting_sprite = gfx_MallocSprite(connecting_width, connecting_height);
+
+    /* Decompress  sprite */
+    zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
+    zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
+    zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
+    zx0_Decompress(connecting_sprite, connecting_compressed);
 }
 
 void KeyFileAvailableGFX()
