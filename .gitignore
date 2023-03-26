@@ -3,3 +3,8 @@ titrek-calc
 .vscode
 bin
 obj
+src/gfx/*.c
+src/gfx/*.h
+convimg.out
+nul.d
+src/gfx/convimg.yaml.lst
