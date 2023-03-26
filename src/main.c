@@ -120,6 +120,7 @@ int main(void)
 
     /* GFX BEGIN */
     gfx_Begin();
+    gfx_SetPalette(global_palette, sizeof_global_palette, 0);
 
     /* GFX SETTINGS */
     GFXsettings();
@@ -193,11 +194,11 @@ int main(void)
         /* Draw the USB sprites */
         if(has_srl_device)
         {
-            gfx_Sprite(usb_connected_sprite, 20, LCD_HEIGHT - 40);
+            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
         }
         else
         {
-            gfx_Sprite(usb_disconnected_sprite, 20, LCD_HEIGHT - 40);
+            gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
         }
 
         if (kb_Data[6] == kb_Enter)
@@ -256,9 +257,9 @@ void writeKeyFile()
         {
             PrintError("Write failed");
         }
-      ti_Close(keyfile);
+        ti_Close(keyfile);
     }
-  else { PrintError("FileIO error"); }
+    else { PrintError("FileIO error"); }
 }
 
 
@@ -275,12 +276,12 @@ void NoKeyFileGFX()
 {
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
     gfx_PrintStringXY("https://ti84pluscenet.tkbstudios.tk/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://ti84pluscenet.tkbstudios.tk/login")) / 2), 100);
-    gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 110);
+    gfx_ScaledSprite_NoClip(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width * 4) / 2, 112, 4, 4);
 }
 
 void ConnectingGFX()
 {
-    gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, (GFX_LCD_HEIGHT - connecting_height));
+    gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
 }
 
 void EndProgram()
