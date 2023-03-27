@@ -1,6 +1,8 @@
 # TI-84 Plus CE Net Calculator client
 The official client for TI-84 Plus CE Net
 
+[![Build and Release](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-dev.yml/badge.svg)](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-dev.yml)
+
 ## How to use
 1. Download the [latest client](https://github.com/tkbstudios/ti84pluscenet-calc/releases/latest).  
 2. Go to the [Web Dashboard](https://ti84pluscenet.tkbstudios.tk/)  
