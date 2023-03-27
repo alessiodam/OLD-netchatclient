@@ -62,8 +62,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: development-UNSTABLE
-          name: Development Release - UNSTABLE
-          body: This is an unstable development release.
+          name: DEV-${{ github.run_number }}
+          release_name: DEV-${{ github.run_number }}
+          body: This is a VERY unstable development release.
           draft: false
           prerelease: true
 
