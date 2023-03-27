@@ -54,3 +54,25 @@ jobs:
           sha: ${{ steps.comment-branch.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ job.status }}
+
+      - name: Create Development Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: development-UNSTABLE
+          name: Development Release - UNSTABLE
+          body: This is an unstable development release.
+          draft: false
+          prerelease: true
+
+      - name: Add TINET.8xp to Release
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: bin/TINET.8xp
+          asset_name: TINET.8xp
+          asset_content_type: application/octet-stream
