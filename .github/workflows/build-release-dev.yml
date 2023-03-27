@@ -47,18 +47,6 @@ jobs:
           name: TINET.8xp
           path: bin/TINET.8xp
 
-  release:
-    runs-on: ubuntu-latest
-    - uses: actions/checkout@v2
-    - uses: ncipollo/release-action@v1
-      with:
-        artifacts: "TINET.8xp"
-        generateReleaseNotes: true
-        artifactErrorsFailBuild: true
-        tag: "development-UNSTABLE"
-        replacesArtifacts: true
-        
-    steps:
       - name: Set final commit status
         uses: myrotvorets/set-commit-status-action@master
         if: always()
