@@ -266,7 +266,7 @@ void writeKeyFile()
         }
         ti_Close(keyfile);
     }
-    else { PrintError("FileIO error"); }
+    else { PrintError("File IO error"); }
 }
 
 
