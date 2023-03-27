@@ -55,9 +55,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
-            const context = github.context;
-            const { owner, repo } = context.repo;
-            const sha = context.sha;
+            const ghContext = github.context;
+            const { owner, repo } = ghContext.repo;
+            const sha = ghContext.sha;
             const state = 'success';
             const description = 'Build succeeded';
             const contextName = 'build';
