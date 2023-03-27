@@ -26,11 +26,7 @@ jobs:
           echo $GITHUB_PATH
       
       - name: Make GFX
-        run: |
-          cd src/gfx
-          make gfx
-          cd ..
-          cd ..
+        run: make gfx
 
       - name: Build TINET.8xp
         run: make
