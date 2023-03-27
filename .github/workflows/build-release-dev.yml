@@ -44,16 +44,10 @@ jobs:
           name: TINET.8xp
           path: bin/TINET.8xp
 
-      - name: Set commit status
-        uses: actions/github-script@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set final commit status
+        uses: myrotvorets/set-commit-status-action@master
+        if: always()
         with:
-          script: |
-            const ghContext = github.context;
-            const { owner, repo } = github.context.repo;
-            const sha = ghContext.sha;
-            const state = 'success';
-            const description = 'Build succeeded';
-            const contextName = 'build';
-            github.repos.createStatus({ owner, repo, sha, state, description, context: contextName });
+          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
