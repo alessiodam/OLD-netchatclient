@@ -38,17 +38,27 @@ jobs:
       - name: Build TINET.8xp
         run: make
 
-      - name: Create release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Create release"
+        uses: "actions/github-script@v6"
         with:
-          tag_name: dev-$(date +%Y%m%d)
-          release_name: Development Release - $(date +%Y/%m/%d)
-          body: |
-            Built from commit(s):
-            $(git log --oneline -n 10)
-          draft: true
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          script: |
+            try {
+              const response = await github.rest.repos.createRelease({
+                draft: false,
+                generate_release_notes: true,
+                name: process.env.RELEASE_TAG,
+                owner: context.repo.owner,
+                prerelease: true,
+                repo: context.repo.repo,
+                tag_name: process.env.RELEASE_TAG,
+              });
+
+              core.exportVariable('RELEASE_ID', response.data.id);
+              core.exportVariable('RELEASE_UPLOAD_URL', response.data.upload_url);
+            } catch (error) {
+              core.setFailed(error.message);
+            }
 
       - name: Upload TINET.8xp
         uses: actions/upload-artifact@v2
@@ -57,13 +67,14 @@ jobs:
           path: bin/TINET.8xp
 
       - name: Set commit status
-        uses: actions/github-script@v5
+        uses: |
+          actions/github-script@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
             const ghContext = github.context;
-            const { owner, repo } = ghContext.repo;
+            const { owner, repo } = github.context.repo;
             const sha = ghContext.sha;
             const state = 'success';
             const description = 'Build succeeded';
