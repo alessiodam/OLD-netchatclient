@@ -26,7 +26,11 @@ jobs:
           echo $GITHUB_PATH
       
       - name: Convert images
-        run: convimg src/gfx
+        run: |
+          cd src/gfx
+          convimg
+          cd ..
+          cd ..
 
       - name: Build TINET.8xp
         run: make
