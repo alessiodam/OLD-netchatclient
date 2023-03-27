@@ -61,7 +61,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: development-UNSTABLE
+          tag_name: development
           release_name: DEV-${{ github.run_number }}
           draft: false
           prerelease: true
