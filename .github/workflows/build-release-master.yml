@@ -1,9 +1,9 @@
-name: Build and Release Dev
+name: Build and Release Master
 
 on:
   push:
     branches:
-      - dev
+      - master
 
 jobs:
   build:
