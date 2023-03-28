@@ -2,7 +2,7 @@
 The official client for TI-84 Plus CE Net
 
 [![Build and Release](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-dev.yml/badge.svg)](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-dev.yml)
-![Documentation build](https://readthedocs.org/projects/ti84pluscenet-calc/badge/?version=latest)
+[![Documentation Status](https://readthedocs.org/projects/ti84pluscenet-calc/badge/?version=latest)](https://ti84pluscenet-calc.readthedocs.io/en/latest/?badge=latest)
 
 ## How to use
 1. Download the [latest client](https://github.com/tkbstudios/ti84pluscenet-calc/releases/latest).  
