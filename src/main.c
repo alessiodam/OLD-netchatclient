@@ -316,8 +316,9 @@ void ConnectingGFX()
 
 void ConnectSerial()
 {
-    uint8_t write_data_buffer[64] = "Hello\0";
-    srl_Write(&srl, write_data_buffer, sizeof(write_data_buffer));
+    char write_data_buffer[64] = "Hello\0";
+    srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
+//    srl_Write(&srl, write_data_buffer, 6);
 }
 
 void readSRL()
