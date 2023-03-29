@@ -280,7 +280,7 @@ void writeKeyFile()
 {
     uint8_t keyfile;
     char username[13] = "sampleuser\0\0";
-    char *key = "samplekey"
+    char *key = "samplekey";
     keyfile = ti_Open("NetKey", "w+");
     if(keyfile){
         if(ti_Write(username, strlen(username), 1, keyfile) == 1)
