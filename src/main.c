@@ -183,9 +183,6 @@ int main(void)
     else
     {
         keyfile_available = true;
-        char write_data_buffer[23] = "USERNAME: ";
-        ti_Read(write_data_buffer + 10, 13, 1, keyfile);
-        srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
         KeyFileAvailableGFX();
     }
 
@@ -331,9 +328,9 @@ void ConnectingGFX()
 
 void ConnectSerial()
 {
-    char write_data_buffer[64] = "Hello\0";
+    char write_data_buffer[23] = "USERNAME: ";
+    ti_Read(write_data_buffer + 10, 13, 1, keyfile);
     srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
-//    srl_Write(&srl, write_data_buffer, 6);
 }
 
 void readSRL()
