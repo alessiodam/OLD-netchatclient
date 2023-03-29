@@ -226,10 +226,13 @@ int main(void)
             {
                 if (USB_connecting == false)
                 {
-                    /* Connect Login and go dashboard script */
-                    USB_connecting = true;
-                    ConnectingGFX();
-                    ConnectSerial();
+                    if (bridge_connected == true)
+                    {
+                        /* Connect Login and go dashboard script */
+                        USB_connecting = true;
+                        ConnectingGFX();
+                        ConnectSerial();
+                    }
                 }
             }
         }
@@ -334,6 +337,7 @@ void readSRL()
 
         if (strcmp(in_buffer, "bridgeConnected") == 0)
         {
+            bridge_connected = true;
             gfx_PrintStringXY("Bridge Connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge Connected!")) / 2), 75);
         }
     }
