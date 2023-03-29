@@ -13,4 +13,4 @@ CXXFLAGS = -Wall -Wextra -Oz
 
 # ----------------------------
 
-include $(shell cedev --makefile)
+include $(shell cedev-config --makefile)
