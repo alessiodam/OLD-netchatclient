@@ -178,15 +178,18 @@ int main(void)
     if (keyfile == 0)
     {
         keyfile_available = false;
-        ti_Close(keyfile);
         NoKeyFileGFX();
     }
     else
     {
         keyfile_available = true;
-        ti_Close(keyfile);
+        char write_data_buffer[23] = "USERNAME: ";
+        ti_Read(write_data_buffer + 10, 1, 13, keyfile);
+        srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
         KeyFileAvailableGFX();
     }
+
+    ti_Close(keyfile);
 
     const usb_standard_descriptors_t *usb_desc = srl_GetCDCStandardDescriptors();
     /* Initialize the USB driver with our event handler and the serial device descriptors */
@@ -276,10 +279,22 @@ void GFXsettings()
 void writeKeyFile()
 {
     uint8_t keyfile;
-    char *username = "sampleuser";
+    char username[13] = "sampleuser\0\0";
+    char *key = "samplekey"
     keyfile = ti_Open("NetKey", "w+");
     if(keyfile){
         if(ti_Write(username, strlen(username), 1, keyfile) == 1)
+        {
+            printf("Write Success");
+        }
+        else
+        {
+            printf("Write failed");
+        }
+
+        ti_Seek(13, SEEK_CUR, keyfile);
+
+        if(ti_Write(key, strlen(key), 1, keyfile) == 1)
         {
             printf("Write Success");
         }
