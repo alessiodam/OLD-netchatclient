@@ -184,7 +184,7 @@ int main(void)
     {
         keyfile_available = true;
         char write_data_buffer[23] = "USERNAME: ";
-        ti_Read(write_data_buffer + 10, 1, 13, keyfile);
+        ti_Read(write_data_buffer + 10, 13, 1, keyfile);
         srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
         KeyFileAvailableGFX();
     }
@@ -280,7 +280,7 @@ void writeKeyFile()
 {
     uint8_t keyfile;
     char username[13] = "sampleuser\0\0";
-    char *key = "samplekey";
+    char *key = "samplekey"
     keyfile = ti_Open("NetKey", "w+");
     if(keyfile){
         if(ti_Write(username, strlen(username), 1, keyfile) == 1)
