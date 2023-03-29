@@ -331,9 +331,8 @@ void readSRL()
     } else if(bytes_read > 0) {
         /* Add a null terminator to make in_buffer a valid C-style string */
         in_buffer[bytes_read] = '\0';
-        gfx_PrintStringXY(in_buffer, ((GFX_LCD_WIDTH - gfx_GetStringWidth(in_buffer)) / 2), 65);
 
-        if (in_buffer == "bridgeConnected")
+        if (strcmp(in_buffer, "bridgeConnected") == 0)
         {
             gfx_PrintStringXY("Bridge Connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge Connected!")) / 2), 75);
         }
