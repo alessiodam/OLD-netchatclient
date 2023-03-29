@@ -59,11 +59,11 @@ void FreeMemory();
 void EndProgram();
 void ConnectSerial();
 void readSRL();
-void PrintError(const char *str);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
 bool USB_connecting = false;
+bool bridge_connected = false;
 bool internet_connected = false;
 srl_device_t srl;
 bool has_srl_device = false;
@@ -192,7 +192,7 @@ int main(void)
     /* Initialize the USB driver with our event handler and the serial device descriptors */
     usb_error_t usb_error = usb_Init(handle_usb_event, NULL, usb_desc, USB_DEFAULT_INIT_FLAGS);
     if(usb_error) {
-       PrintError(("usb init error %u\n", usb_error));
+       printf("usb init error %u\n", usb_error);
        return 1;
     }
 
@@ -278,15 +278,15 @@ void writeKeyFile()
     if(keyfile){
         if(ti_Write(username, strlen(username), 1, keyfile) == 1)
         {
-            PrintError("Write Success");
+            printf("Write Success");
         }
         else
         {
-            PrintError("Write failed");
+            printf("Write failed");
         }
         ti_Close(keyfile);
     }
-    else { PrintError("File IO error"); }
+    else { printf("File IO error"); }
 }
 
 
@@ -313,14 +313,13 @@ void ConnectingGFX()
 
 void ConnectSerial()
 {
-    uint8_t write_data_buffer[32] = "Hello";
+    uint8_t write_data_buffer[64] = "Hello\0";
     srl_Write(&srl, write_data_buffer, sizeof(write_data_buffer));
 }
 
 void readSRL()
 {
     char in_buffer[64];
-    char out_buffer[64];
 
     /* Read up to 64 bytes from the serial buffer */
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
@@ -330,11 +329,17 @@ void readSRL()
         printf("error %d on srl_Read\n", bytes_read);
         has_srl_device = false;
     } else if(bytes_read > 0) {
-        /* Write the data back to serial */
-        printf(in_buffer);
-        srl_Write(&srl, out_buffer, bytes_read);
+        /* Add a null terminator to make in_buffer a valid C-style string */
+        in_buffer[bytes_read] = '\0';
+        gfx_PrintStringXY(in_buffer, ((GFX_LCD_WIDTH - gfx_GetStringWidth(in_buffer)) / 2), 65);
+
+        if (in_buffer == "bridgeConnected")
+        {
+            gfx_PrintStringXY("Bridge Connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge Connected!")) / 2), 75);
+        }
     }
 }
+
 
 void FreeMemory()
 {
@@ -351,13 +356,4 @@ void EndProgram()
     FreeMemory();
     usb_Cleanup();
     gfx_End();
-}
-
-void PrintError(const char *str)
-{
-    gfx_End();
-    os_ClrHome();
-    printf(str);
-    delay(5000);
-    EndProgram();
 }
