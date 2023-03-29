@@ -7,6 +7,7 @@
  *--------------------------------------
 */
 
+/* When contributing, please add your username in the list here */
 /*
  *--------------Contributors--------------
  * TIny_Hacker
@@ -55,11 +56,12 @@ void ConnectingGFX();
 void NoKeyFileGFX();
 void KeyFileAvailableGFX();
 void EndProgram();
-void Connect();
+void ConnectSerial();
 void PrintError(const char *str);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
+bool USB_connecting = false;
 bool internet_connected = false;
 srl_device_t srl;
 bool has_srl_device = false;
@@ -210,8 +212,16 @@ int main(void)
 
         if (kb_Data[6] == kb_Enter)
         {
-            /* Connect Login and go dashboard script */
-            ConnectingGFX();
+            if (USB_connected == false)
+            {
+                if (USB_connecting == false)
+                {
+                    /* Connect Login and go dashboard script */
+                    USB_connecting = true;
+                    ConnectingGFX();
+                    ConnectSerial();
+                }
+            }
         }
 
         if (kb_Data[1] == kb_Mode)
@@ -289,6 +299,12 @@ void NoKeyFileGFX()
 void ConnectingGFX()
 {
     gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
+}
+
+void ConnectSerial()
+{
+    uint8_t write_data_buffer[32] = "Hello";
+    srl_Write(&srl, write_data_buffer, sizeof(write_data_buffer));
 }
 
 void EndProgram()
