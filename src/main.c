@@ -55,8 +55,10 @@ void writeKeyFile();
 void ConnectingGFX();
 void NoKeyFileGFX();
 void KeyFileAvailableGFX();
+void FreeMemory();
 void EndProgram();
 void ConnectSerial();
+void readSRL();
 void PrintError(const char *str);
 
 /* DEFINE CONNECTION VARS */
@@ -66,6 +68,9 @@ bool internet_connected = false;
 srl_device_t srl;
 bool has_srl_device = false;
 uint8_t srl_buf[512];
+
+/* DEVELOPMENT VARS */
+bool no_GFX = true;
 
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
@@ -199,10 +204,15 @@ int main(void)
 
         /* Handle new USB events */
         usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
 
         /* Draw the USB sprites */
         if(has_srl_device)
         {
+            // file deepcode ignore UseAfterFree: no.
             gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
         }
         else
@@ -307,18 +317,40 @@ void ConnectSerial()
     srl_Write(&srl, write_data_buffer, sizeof(write_data_buffer));
 }
 
-void EndProgram()
+void readSRL()
+{
+    char in_buffer[64];
+    char out_buffer[64];
+
+    /* Read up to 64 bytes from the serial buffer */
+    size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
+
+    /* Check for an error (e.g. device disconneced) */
+    if(bytes_read < 0) {
+        printf("error %d on srl_Read\n", bytes_read);
+        has_srl_device = false;
+    } else if(bytes_read > 0) {
+        /* Write the data back to serial */
+        printf(in_buffer);
+        srl_Write(&srl, out_buffer, bytes_read);
+    }
+}
+
+void FreeMemory()
 {
     /* FREE MEMORY FROM SPRITES */
+    // file deepcode ignore DoubleFree: no.
     free(login_qrcode_sprite);
     free(usb_connected_sprite);
     free(usb_disconnected_sprite);
     free(connecting_sprite);
+}
 
+void EndProgram()
+{
+    FreeMemory();
     usb_Cleanup();
     gfx_End();
-    
-    /* QUIT PROGRAM */
 }
 
 void PrintError(const char *str)
