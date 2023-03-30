@@ -442,12 +442,13 @@ void readSRL()
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
         }
 
-        // Current time manager
+        /*// Doesn't work, crashes srl connection
         if(StringStartsWith(in_buffer, "currentTime"))
         {
             gfx_PrintStringXY(in_buffer, 5, 75);
             srl_busy = false;
         }
+        */
     }
 }
 
