@@ -59,15 +59,20 @@ void FreeMemory();
 void EndProgram();
 void ConnectSerial();
 void readSRL();
+bool StringStartsWith(const char *a, const char *b);
+char substractStringFromBuffer(const char *a, const char *b);
+void sendSerialInitData();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
 bool USB_connecting = false;
 bool bridge_connected = false;
 bool internet_connected = false;
+bool srl_busy = false;
 srl_device_t srl;
 bool has_srl_device = false;
 uint8_t srl_buf[512];
+bool serial_init_data_sent = false;
 
 /* DEVELOPMENT VARS */
 bool no_GFX = true;
@@ -209,6 +214,17 @@ int main(void)
             readSRL();
         }
 
+        if (has_srl_device == true)
+        {
+            if (bridge_connected == true)
+            {
+                if (serial_init_data_sent == false)
+                {
+                    sendSerialInitData();
+                }
+            }
+        }
+
         /* Draw the USB sprites */
         if(has_srl_device)
         {
@@ -228,15 +244,30 @@ int main(void)
                 {
                     if (bridge_connected == true)
                     {
-                        /* Connect Login and go dashboard script */
-                        USB_connecting = true;
-                        ConnectingGFX();
-                        ConnectSerial();
+                        if (srl_busy == false)
+                        {
+                            /* Connect Login and go dashboard script */
+                            USB_connecting = true;
+                            srl_busy = true;
+                            ConnectSerial();
+                            srl_busy = false;
+                        }
                     }
                 }
             }
         }
 
+        /*// Doesn't work currently, serial crashes
+        if (kb_Data[7] == kb_Up)
+        {
+            char request_buffer[12] = "currentTime";
+            if (srl_busy == false)
+            {
+                srl_busy = true;
+                srl_Write(&srl, request_buffer, strlen(request_buffer));
+            }
+        }
+        */
         if (kb_Data[1] == kb_Mode)
         {
             writeKeyFile();
@@ -277,7 +308,7 @@ void writeKeyFile()
 {
     uint8_t keyfile;
     char username[13] = "sampleuser\0\0";
-    char *key = "samplekey";
+    char *key = "samplekey\0\0";
     keyfile = ti_Open("NetKey", "w+");
     if(keyfile){
         if(ti_Write(username, strlen(username), 1, keyfile) == 1)
@@ -306,6 +337,7 @@ void writeKeyFile()
 
 
 
+
 void KeyFileAvailableGFX()
 {
     gfx_PrintStringXY("Keyfile detected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 95);
@@ -328,15 +360,41 @@ void ConnectingGFX()
 
 void ConnectSerial()
 {
-    char write_data_buffer[23] = "USERNAME: ";
-    ti_Read(write_data_buffer + 10, 13, 1, keyfile);
-    srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
+    srl_busy = true;
+    char write_data_buffer[27] = "USERNAME:";
+    char username_buffer[14];
+
+    keyfile = ti_Open("NetKey", "r");
+
+    if (keyfile)
+    {
+        if (ti_Read(username_buffer, 13, 1, keyfile) == 1)
+        {
+            username_buffer[13] = '\0'; // add null terminator
+
+            // concatenate the username to write_data_buffer, with a maximum length of 13
+            strncat(write_data_buffer, username_buffer, 13);
+            write_data_buffer[strlen(write_data_buffer)] = '\0'; // add null terminator
+
+            ti_Close(keyfile);
+
+            username = username_buffer;
+            gfx_PrintStringXY(username, (LCD_WIDTH - gfx_GetStringWidth(username)) / 2, LCD_HEIGHT / 2);
+
+            srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
+
+            ConnectingGFX();
+        } else { printf("Read failed"); }
+    } else { printf("FileIO error!"); }
+    srl_busy = false;
 }
+
+
 
 void readSRL()
 {
     char in_buffer[64];
-
+    
     /* Read up to 64 bytes from the serial buffer */
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
 
@@ -348,10 +406,47 @@ void readSRL()
         /* Add a null terminator to make in_buffer a valid C-style string */
         in_buffer[bytes_read] = '\0';
 
+        /* BRIDGE CONNECTED GFX */
         if (strcmp(in_buffer, "bridgeConnected") == 0)
         {
             bridge_connected = true;
-            gfx_PrintStringXY("Bridge Connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge Connected!")) / 2), 75);
+            gfx_SetColor(0x00);
+            gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
+            gfx_SetColor(0x00);
+            gfx_PrintStringXY("Bridge connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge connected!")) / 2), 80);
+        }
+        if (strcmp(in_buffer, "bridgeDisconnected") == 0)
+        {
+            bridge_connected = false;
+            gfx_SetColor(0x00);
+            gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
+            gfx_SetColor(0x00);
+            gfx_PrintStringXY("Bridge disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80);
+        }
+
+        /* Internet Connected GFX */
+        if (strcmp(in_buffer, "internetConnected") == 0)
+        {
+            internet_connected = true;
+            gfx_SetColor(0x00);
+            gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
+            gfx_SetColor(0x00);
+            gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 110);
+        }
+        if (strcmp(in_buffer, "internetDisconnected") == 0)
+        {
+            internet_connected = false;
+            gfx_SetColor(0x00);
+            gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
+            gfx_SetColor(0x00);
+            gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
+        }
+
+        // Current time manager
+        if(StringStartsWith(in_buffer, "currentTime"))
+        {
+            gfx_PrintStringXY(in_buffer, 5, 75);
+            srl_busy = false;
         }
     }
 }
@@ -372,4 +467,38 @@ void EndProgram()
     FreeMemory();
     usb_Cleanup();
     gfx_End();
+}
+
+bool StringStartsWith(const char *a, const char *b)
+{
+   if(strncmp(a, b, strlen(b)) == 0) return 1;
+   return 0;
+}
+
+char substractStringFromBuffer(const char *a, const char *b)
+{
+    // find the last index of `/`
+    char *path = a + strlen(a);
+    while (path != a && *path != '/') {
+    path--;
+    }
+    // Calculate the length
+    int length = path-a;
+    // Allocate an extra byte for null terminator
+    char *response = malloc(length+1);
+    // Copy the string into the newly allocated buffer
+    memcpy(response, a, length);
+    // Null-terminate the copied string
+    response[length] = '\0';
+    // Don't forget to free malloc-ed memory
+    free(response);
+    return response;
+}
+
+void sendSerialInitData()
+{
+    serial_init_data_sent = true;
+    char init_serial_connected_text_buffer[17] = "SERIAL_CONNECTED";
+
+    srl_Write(&srl, init_serial_connected_text_buffer, strlen(init_serial_connected_text_buffer));
 }
