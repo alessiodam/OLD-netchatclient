@@ -58,10 +58,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: DEV-${{ github.run_number }}
+          tag_name: V0.0.${{ github.run_number }}
           release_name: DEV-${{ github.run_number }}
           draft: false
-          prerelease: true
+          prerelease: false
 
       - name: Add TINET.8xp to Release
         uses: actions/upload-release-asset@v1.0.1
