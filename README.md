@@ -1,6 +1,7 @@
 # TI-84 Plus CE Net Calculator client
 The official client for TI-84 Plus CE Net
 
+[![wakatime](https://wakatime.com/badge/github/tkbstudios/ti84pluscenet-calc.svg)](https://wakatime.com/badge/github/tkbstudios/ti84pluscenet-calc)
 [![Build and Release Master](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-master.yml/badge.svg)](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-master.yml)
 [![Build and Release](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-dev.yml/badge.svg)](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-dev.yml)
 [![Documentation Status](https://readthedocs.org/projects/ti84pluscenet-calc/badge/?version=latest)](https://ti84pluscenet-calc.readthedocs.io/en/latest/?badge=latest)
