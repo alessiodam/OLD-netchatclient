@@ -62,6 +62,8 @@ void readSRL();
 bool StringStartsWith(const char *a, const char *b);
 char substractStringFromBuffer(const char *a, const char *b);
 void sendSerialInitData();
+void getCurrentTime();
+void printServerPing();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -260,14 +262,10 @@ int main(void)
         /*// Doesn't work currently, serial crashes
         if (kb_Data[7] == kb_Up)
         {
-            char request_buffer[12] = "currentTime";
-            if (srl_busy == false)
-            {
-                srl_busy = true;
-                srl_Write(&srl, request_buffer, strlen(request_buffer));
-            }
+            getCurrentTime();
         }
         */
+
         if (kb_Data[1] == kb_Mode)
         {
             writeKeyFile();
@@ -443,9 +441,9 @@ void readSRL()
         }
 
         /*// Doesn't work, crashes srl connection
-        if(StringStartsWith(in_buffer, "currentTime"))
+        if(strncmp((char*)in_buffer, "currentTime:", 12) == 0)
         {
-            gfx_PrintStringXY(in_buffer, 5, 75);
+            gfx_PrintStringXY((char*)in_buffer, 5, 75);
             srl_busy = false;
         }
         */
@@ -481,7 +479,7 @@ char substractStringFromBuffer(const char *a, const char *b)
     // find the last index of `/`
     char *path = a + strlen(a);
     while (path != a && *path != '/') {
-    path--;
+        path--;
     }
     // Calculate the length
     int length = path-a;
@@ -496,6 +494,7 @@ char substractStringFromBuffer(const char *a, const char *b)
     return response;
 }
 
+
 void sendSerialInitData()
 {
     serial_init_data_sent = true;
@@ -503,3 +502,15 @@ void sendSerialInitData()
 
     srl_Write(&srl, init_serial_connected_text_buffer, strlen(init_serial_connected_text_buffer));
 }
+
+/*// Crashes SRL connection
+void getCurrentTime()
+{
+    char request_buffer[12] = "currentTime";
+    if (srl_busy == false)
+    {
+        srl_busy = true;
+        srl_Write(&srl, request_buffer, strlen(request_buffer));
+    }
+}
+*/
