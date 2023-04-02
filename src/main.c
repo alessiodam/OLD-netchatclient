@@ -410,9 +410,13 @@ void ConnectSerial()
         {
             ti_Close(keyfile);
 
-            gfx_PrintStringXY(write_data_buffer, (LCD_WIDTH - gfx_GetStringWidth(write_data_buffer)) / 2, LCD_HEIGHT / 2);
+            // Add null terminator
+            write_data_buffer[14] = '\0';
 
-            printf(write_data_buffer);
+            gfx_PrintStringXY(write_data_buffer, (LCD_WIDTH - gfx_GetStringWidth(write_data_buffer)) / 2, LCD_HEIGHT / 2);
+            printf("%s", write_data_buffer);
+
+            printf("%s", write_data_buffer);
 
             srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
 
@@ -421,6 +425,7 @@ void ConnectSerial()
     } else { printf("FileIO error!"); }
     srl_busy = false;
 }
+
 
 
 void readSRL()
@@ -511,7 +516,7 @@ bool StringStartsWith(const char *a, const char *b)
 char substractStringFromBuffer(const char *a, const char *b)
 {
     // find the last index of `/`
-    char *path = a + strlen(a);
+    const char *path = a + strlen(a);
     while (path != a && *path != '/') {
         path--;
     }
