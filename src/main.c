@@ -397,16 +397,16 @@ void ConnectSerial()
 void ConnectSerial()
 {
     srl_busy = true;
-    char write_data_buffer[15];
+    char write_data_buffer[18];
 
-    write_data_buffer[0] = 0x00;
+    write_data_buffer[0] = "0x00";
 
     keyfile = ti_Open("NetKey", "r");
 
     if (keyfile)
     {
         /* Read 13 bytes starting from the second byte */
-        if (ti_Read(&write_data_buffer[1], 13, 1, keyfile) == 1)
+        if (ti_Read(&write_data_buffer[5], 13, 1, keyfile) == 1)
         {
             ti_Close(keyfile);
 
