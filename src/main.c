@@ -168,7 +168,7 @@ int main(void)
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TI-84 Plus CE Net", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TI-84 Plus CE Net")) / 2), 5);
     gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("Press [2nd] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [2nd] to quit.")) / 2), 35);
+    gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
@@ -275,7 +275,7 @@ int main(void)
             return 1;
         }
 
-    } while (kb_Data[1] != kb_2nd);
+    } while (kb_Data[6] != kb_Clear);
 
     EndProgram();
 }
