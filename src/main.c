@@ -79,6 +79,9 @@ bool serial_init_data_sent = false;
 /* DEVELOPMENT VARS */
 bool no_GFX = true;
 
+/* DEFINE PACKETS */
+
+
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
     usb_error_t err;
@@ -165,7 +168,7 @@ int main(void)
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TI-84 Plus CE Net", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TI-84 Plus CE Net")) / 2), 5);
     gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("Press [2nd] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [2nd] to quit.")) / 2), 35);
+    gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
@@ -272,7 +275,7 @@ int main(void)
             return 1;
         }
 
-    } while (kb_Data[1] != kb_2nd);
+    } while (kb_Data[6] != kb_Clear);
 
     EndProgram();
 }
@@ -305,8 +308,8 @@ void GFXsettings()
 void writeKeyFile()
 {
     uint8_t keyfile;
-    char username[13] = "sampleuser\0\0";
-    char *key = "samplekey\0\0";
+    char username[14] = "sampleuser\\0";
+    char *key = "samplekey\\0";
     keyfile = ti_Open("NetKey", "w+");
     if(keyfile){
         if(ti_Write(username, strlen(username), 1, keyfile) == 1)
@@ -356,6 +359,8 @@ void ConnectingGFX()
     gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
 }
 
+/* old login no packet formatting */
+/*
 void ConnectSerial()
 {
     srl_busy = true;
@@ -378,6 +383,40 @@ void ConnectSerial()
 
             username = username_buffer;
             gfx_PrintStringXY(username, (LCD_WIDTH - gfx_GetStringWidth(username)) / 2, LCD_HEIGHT / 2);
+
+            srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
+
+            ConnectingGFX();
+        } else { printf("Read failed"); }
+    } else { printf("FileIO error!"); }
+    srl_busy = false;
+}
+*/
+
+/* new login with packet formatting */
+void ConnectSerial()
+{
+    srl_busy = true;
+    char write_data_buffer[18];
+
+    write_data_buffer[0] = "0x00";
+
+    keyfile = ti_Open("NetKey", "r");
+
+    if (keyfile)
+    {
+        /* Read 13 bytes starting from the second byte */
+        if (ti_Read(&write_data_buffer[5], 13, 1, keyfile) == 1)
+        {
+            ti_Close(keyfile);
+
+            // Add null terminator
+            write_data_buffer[14] = '\0';
+
+            gfx_PrintStringXY(write_data_buffer, (LCD_WIDTH - gfx_GetStringWidth(write_data_buffer)) / 2, LCD_HEIGHT / 2);
+            printf("%s", write_data_buffer);
+
+            printf("%s", write_data_buffer);
 
             srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
 
@@ -423,7 +462,7 @@ void readSRL()
         }
 
         /* Internet Connected GFX */
-        if (strcmp(in_buffer, "internetConnected") == 0)
+        if (strcmp(in_buffer, "SERIAL_CONNECTED_CONFIRMED_BY_SERVER") == 0)
         {
             internet_connected = true;
             gfx_SetColor(0x00);
@@ -477,7 +516,7 @@ bool StringStartsWith(const char *a, const char *b)
 char substractStringFromBuffer(const char *a, const char *b)
 {
     // find the last index of `/`
-    char *path = a + strlen(a);
+    const char *path = a + strlen(a);
     while (path != a && *path != '/') {
         path--;
     }
