@@ -25,6 +25,7 @@
 #include <compression.h>
 #include <srldrvce.h>
 #include <tice.h>
+#include <debug.h>
 
 
 /* Include the converted graphics file */
@@ -36,11 +37,13 @@ char *TEMP_PROGRAM = "_";
 char *MAIN_PROGRAM = "TINET";
 
 /* DEFINE USER */
-uint8_t keyfile;
-uint8_t keyfile_buffer[256];
 bool keyfile_available = false;
 void *username;
 void *authkey;
+uint8_t appvar;
+
+size_t flen ;
+uint8_t *ptr;
 
 /* DEFINE SPRITES */
 gfx_sprite_t *login_qrcode_sprite;
@@ -172,20 +175,9 @@ int main(void)
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
-    /* KEYFILE CHECK */
-    /*
-    bool *new_var;
-    new_var = ti_Open("NetKey", "w+");
-    if (ti_Write('USERNAME:"tkbstudios"', sizeof('USERNAME:"tkbstudios"'), 1, new_var) != 1)
-    {
-        return 1;
-    }
-    ti_CloseAll();
-    */
+    appvar = ti_Open("NetKey", "r");
 
-    keyfile = ti_Open("NetKey", "r+");
-
-    if (keyfile == 0)
+    if (appvar == 0)
     {
         keyfile_available = false;
         NoKeyFileGFX();
@@ -194,9 +186,17 @@ int main(void)
     {
         keyfile_available = true;
         KeyFileAvailableGFX();
-    }
+        flen = ti_GetSize(appvar);
+        uint8_t *data_ptr = (uint8_t *)ti_GetDataPtr(appvar);
+        ti_Close(appvar);
 
-    ti_Close(keyfile);
+        dbg_printf("User: %s\nToken:\n", (char *)data_ptr);
+        size_t un_len = strlen((char *)data_ptr) + 1;
+        data_ptr += (un_len + 1);
+        flen -= (un_len + 1);
+        for (int i = 0; i < flen; i++)
+            dbg_printf("%02x\n", data_ptr[i]);
+    }
 
     const usb_standard_descriptors_t *usb_desc = srl_GetCDCStandardDescriptors();
     /* Initialize the USB driver with our event handler and the serial device descriptors */
@@ -307,44 +307,44 @@ void GFXsettings()
 
 void writeKeyFile()
 {
-    uint8_t keyfile;
-    char username[14] = "sampleuser\\0";
-    char *key = "samplekey\\0";
-    keyfile = ti_Open("NetKey", "w+");
-    if(keyfile){
-        if(ti_Write(username, strlen(username), 1, keyfile) == 1)
-        {
-            printf("Write Success");
-        }
-        else
-        {
-            printf("Write failed");
-        }
+    uint8_t appvar;
+    char username[] = "sampleuser/0";
+    char key[] = "samplekey/0";
+    appvar = ti_Open("NetKey", "w");
+    if(appvar){
+        int bytes_written;
+        int file_position;
 
-        ti_Seek(13, SEEK_CUR, keyfile);
+        file_position = ti_Tell(appvar);
+        dbg_printf("Before writing username: file_position=%d\n", file_position);
 
-        if(ti_Write(key, strlen(key), 1, keyfile) == 1)
-        {
-            printf("Write Success");
-        }
-        else
-        {
-            printf("Write failed");
-        }
-        ti_Close(keyfile);
+        bytes_written = ti_Write(username, strlen(username) + 1, 1, appvar);
+        dbg_printf("Bytes written for username: %d\n", bytes_written);
+
+        file_position = ti_Tell(appvar);
+        dbg_printf("After writing username: file_position=%d\n", file_position);
+
+        bytes_written = ti_Write(key, strlen(key) + 1, 1, appvar);
+        dbg_printf("Bytes written for key: %d\n", bytes_written);
+
+        file_position = ti_Tell(appvar);
+        dbg_printf("After writing key: file_position=%d\n", file_position);
+
+        ti_Close(appvar);
     }
-    else { printf("File IO error"); }
+    else { dbg_printf("File IO error"); }
 }
-
-
 
 
 void KeyFileAvailableGFX()
 {
+//    uint8_t appvar;
+//    appvar = ti_Open("NetKey", "r");
     gfx_PrintStringXY("Keyfile detected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 95);
-    ti_Read(keyfile_buffer, 18, 1, keyfile);
+//    ti_Read(keyfile_buffer, 18, 1, appvar);
 //    gfx_PrintStringXY((strcat("Username: ", username)), ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 95);
     gfx_PrintStringXY("Press [enter] to connect!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [enter] to connect!")) / 2), 65);
+//    ti_Close(appvar)
 }
 
 void NoKeyFileGFX()
@@ -401,28 +401,30 @@ void ConnectSerial()
 
     write_data_buffer[0] = "0x00";
 
-    keyfile = ti_Open("NetKey", "r");
+    uint8_t appvar;
 
-    if (keyfile)
+    appvar = ti_Open("NetKey", "r");
+
+    if (appvar)
     {
         /* Read 13 bytes starting from the second byte */
-        if (ti_Read(&write_data_buffer[5], 13, 1, keyfile) == 1)
+        if (ti_Read(&write_data_buffer[5], 13, 1, appvar) == 1)
         {
-            ti_Close(keyfile);
+            ti_Close(appvar);
 
             // Add null terminator
             write_data_buffer[14] = '\0';
 
             gfx_PrintStringXY(write_data_buffer, (LCD_WIDTH - gfx_GetStringWidth(write_data_buffer)) / 2, LCD_HEIGHT / 2);
-            printf("%s", write_data_buffer);
+            dbg_printf("%s\n", write_data_buffer);
 
-            printf("%s", write_data_buffer);
+            dbg_printf("%s\n", write_data_buffer);
 
             srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
 
             ConnectingGFX();
-        } else { printf("Read failed"); }
-    } else { printf("FileIO error!"); }
+        } else { dbg_printf("Read failed\n"); }
+    } else { dbg_printf("FileIO error!\n"); }
     srl_busy = false;
 }
 
@@ -437,7 +439,7 @@ void readSRL()
 
     /* Check for an error (e.g. device disconneced) */
     if(bytes_read < 0) {
-        printf("error %d on srl_Read\n", bytes_read);
+        dbg_printf("error %d on srl_Read\n", bytes_read);
         has_srl_device = false;
     } else if(bytes_read > 0) {
         /* Add a null terminator to make in_buffer a valid C-style string */
