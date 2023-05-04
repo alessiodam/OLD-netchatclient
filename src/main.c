@@ -186,15 +186,24 @@ int main(void)
     {
         keyfile_available = true;
         KeyFileAvailableGFX();
+
         flen = ti_GetSize(appvar);
         uint8_t *data_ptr = (uint8_t *)ti_GetDataPtr(appvar);
         ti_Close(appvar);
 
-        dbg_printf("User: %s\nToken:\n", (char *)data_ptr);
-        size_t un_len = strlen((char *)data_ptr) + 1;
+        char *username = (char *)data_ptr;
+        dbg_printf("User: %s\n", username);
+
+        size_t un_len = strlen(username) + 1;
         data_ptr += (un_len + 1);
         flen -= (un_len + 1);
-        for (int i = 0; i < flen; i++)
+
+        char *key = (char *)data_ptr - 1;
+        size_t key_len = strlen(key);
+        dbg_printf("Token: %s\n", key);
+
+        // Print the key in hexadecimal format if needed
+        for (int i = 0; i < key_len; i++)
             dbg_printf("%02x\n", data_ptr[i]);
     }
 
