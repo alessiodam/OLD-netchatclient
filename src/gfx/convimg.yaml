@@ -26,6 +26,16 @@ converts:
     compress: zx0
     images:
       - connecting.png
+  - name: bridge_connected
+    palette: global_palette
+    compress: zx0
+    images:
+      - bridge_connected.png
+  - name: internet_connected
+    palette: global_palette
+    compress: zx0
+    images:
+      - internet_connected.png
 
 outputs:
   - type: c
@@ -37,3 +47,5 @@ outputs:
       - usb_connected
       - usb_disconnected
       - connecting
+      - bridge_connected
+      - internet_connected
