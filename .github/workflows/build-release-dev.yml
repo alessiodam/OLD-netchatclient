@@ -10,11 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Skip based on commit message
-        uses: veggiemonk/skip-commit@1.0.0
-        env:
-          COMMIT_FILTER: '^(?!build: ).*$'
-      
       - name: Checkout code
         uses: actions/checkout@v3
 
