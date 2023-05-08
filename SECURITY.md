@@ -7,7 +7,6 @@ Latest version ALWAYS supports security updates
 | Version | Supported          |
 | ------- | ------------------ |
 | latest  | :white_check_mark: |
-| other version | depends      |
 
 ## Reporting a Vulnerability
 

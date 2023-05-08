@@ -81,6 +81,20 @@ bool has_srl_device = false;
 uint8_t srl_buf[512];
 bool serial_init_data_sent = false;
 
+/* DEFINE GUI ITERATIONS AND UPDATE FUNCTION */
+typedef enum {
+    STATE_LOGIN_SCREEN,
+    STATE_NO_KEY_FILE,
+    STATE_KEY_FILE_AVAILABLE,
+    STATE_CONNECTING,
+    STATE_BRIDGE_CONNECTED,
+    STATE_INTERNET_CONNECTED,
+    STATE_LOGGED_IN,
+    STATE_HAS_SRL_DEVICE,
+    STATE_NO_SRL_DEVICE,
+    STATE_DASHBOARD,
+} program_state_t;
+void update_UI(program_state_t current_state, program_state_t previous_state);
 
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
@@ -139,6 +153,8 @@ static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_cal
 
 int main(void)
 {
+    program_state_t current_state, previous_state;
+
     /* SET GFX SPRITES */
     GFXspritesInit();
 
@@ -162,7 +178,7 @@ int main(void)
     if (appvar == 0)
     {
         keyfile_available = false;
-        NoKeyFileGFX();
+        current_state = STATE_NO_KEY_FILE;
     }
     else
     {
@@ -211,37 +227,32 @@ int main(void)
             readSRL();
         }
 
-        if (has_srl_device == true)
+        if (has_srl_device && bridge_connected && !serial_init_data_sent)
         {
-            if (bridge_connected == true)
-            {
-                if (serial_init_data_sent == false)
-                {
-                    sendSerialInitData();
-                }
-            }
+            sendSerialInitData();
         }
 
         /* Draw the USB sprites */
         if(has_srl_device)
         {
-            // file deepcode ignore UseAfterFree: no.
-            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
+            current_state = STATE_HAS_SRL_DEVICE;
+            update_UI(current_state, previous_state);
+            previous_state = current_state;
         }
         else
         {
-            gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
+            current_state = STATE_NO_SRL_DEVICE;
+            update_UI(current_state, previous_state);
+            previous_state = current_state;
         }
 
-        if (kb_Data[6] == kb_Enter &&
-            !USB_connected &&
-            !USB_connecting &&
-            bridge_connected &&
-            !srl_busy)
+        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
         {
             /* login */
             USB_connecting = true;
-            ConnectingGFX();
+            current_state = STATE_CONNECTING;
+            update_UI(current_state, previous_state);
+            previous_state = current_state;
             login();
         }
 
@@ -252,9 +263,36 @@ int main(void)
             return 1;
         }
 
+        update_UI(current_state, previous_state);
+        previous_state = current_state;
+
     } while (kb_Data[6] != kb_Clear);
 
     EndProgram();
+}
+
+void update_UI(program_state_t current_state, program_state_t previous_state) {
+    if (current_state == previous_state) {
+        return; // No need to update the UI if the state hasn't changed
+    }
+
+    switch (current_state) {
+        case STATE_NO_KEY_FILE:
+            NoKeyFileGFX();
+            break;
+        case STATE_KEY_FILE_AVAILABLE:
+            KeyFileAvailableGFX();
+            break;
+        case STATE_CONNECTING:
+            ConnectingGFX();
+            break;
+        case STATE_HAS_SRL_DEVICE:
+            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
+            break;
+        case STATE_NO_SRL_DEVICE:
+            gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
+            break;
+    }
 }
 
 void GFXspritesInit()
@@ -416,6 +454,10 @@ void readSRL()
             snprintf(token_msg, sizeof(token_msg), "TOKEN:%s", authkey);
             ConnectSerial(token_msg);
         }
+        if (strcmp(in_buffer, "Logged in!") == 0)
+        {
+            dbg_printf("Logged in!");
+        }
     }
 }
 
@@ -471,15 +513,3 @@ void sendSerialInitData()
 
     srl_Write(&srl, init_serial_connected_text_buffer, strlen(init_serial_connected_text_buffer));
 }
-
-/*// Crashes SRL connection
-void getCurrentTime()
-{
-    char request_buffer[12] = "currentTime";
-    if (srl_busy == false)
-    {
-        srl_busy = true;
-        srl_Write(&srl, request_buffer, strlen(request_buffer));
-    }
-}
-*/
