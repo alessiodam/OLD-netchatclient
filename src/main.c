@@ -11,6 +11,7 @@
 /*
  *--------------Contributors--------------
  * TIny_Hacker
+ * ACagliano (Anthony Cagliano)
  *--------------------------------------
 */
 
@@ -27,7 +28,6 @@
 #include <tice.h>
 #include <debug.h>
 
-
 /* Include the converted graphics file */
 #include "gfx/gfx.h"
 
@@ -42,6 +42,7 @@ char *username;
 char *authkey;
 uint8_t appvar;
 
+/* READ BUFFERS */
 size_t read_flen ;
 uint8_t *ptr;
 char in_buffer[64];
@@ -60,15 +61,14 @@ void ConnectingGFX();
 void NoKeyFileGFX();
 void KeyFileAvailableGFX();
 void FreeMemory();
-void EndProgram();
-void ConnectSerial();
+void quitProgram();
+void ConnectSerial(char *token_msg);
 void login();
 void readSRL();
-bool StringStartsWith(const char *a, const char *b);
-char substractStringFromBuffer(const char *a, const char *b);
 void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
+void ConnectSerial(char *message);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -95,6 +95,17 @@ typedef enum {
 } program_state_t;
 program_state_t current_state, previous_state;
 void update_UI(program_state_t current_state, program_state_t previous_state);
+
+/* DEFINE KEY STATES AND FUNCTIONS */
+typedef void (*State)(void);
+State key_state;
+void state_no_srl_device();
+void state_has_srl_device();
+void state_no_key_file();
+void state_key_file_available();
+void state_connecting();
+void state_dashboard();
+
 
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
@@ -163,6 +174,8 @@ int main(void)
     /* GFX SETTINGS */
     GFXsettings();
 
+    key_state = state_no_key_file;
+
     /* MAIN MENU */
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TI-84 Plus CE Net", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TI-84 Plus CE Net")) / 2), 5);
@@ -177,6 +190,7 @@ int main(void)
     {
         keyfile_available = false;
         current_state = STATE_NO_KEY_FILE;
+        key_state = state_no_key_file;
         update_UI(current_state, previous_state);
         previous_state = current_state;
     }
@@ -199,7 +213,7 @@ int main(void)
         authkey = read_key;
         dbg_printf("Token: %s\n", authkey);
 
-        for (int i = 0; i < key_len; i++)
+        for (size_t i = 0; i < key_len; i++)
             dbg_printf("%02x\n", data_ptr[i]);
 
         keyfile_available = true;
@@ -220,6 +234,11 @@ int main(void)
         /* Update kb_Data */
         kb_Scan();
 
+        if (kb_Data[6] == kb_Clear)
+        {
+            quitProgram();
+        }
+
         /* Handle new USB events */
         usb_HandleEvents();
         if (has_srl_device)
@@ -236,48 +255,26 @@ int main(void)
         if(has_srl_device)
         {
             current_state = STATE_HAS_SRL_DEVICE;
+            key_state = state_has_srl_device;
             update_UI(current_state, previous_state);
             previous_state = current_state;
         }
         else
         {
             current_state = STATE_NO_SRL_DEVICE;
+            key_state = state_no_srl_device;
             update_UI(current_state, previous_state);
             previous_state = current_state;
         }
 
-        switch (current_state) {
-            case STATE_NO_KEY_FILE:
-            case STATE_KEY_FILE_AVAILABLE:
-            case STATE_CONNECTING:
-            case STATE_HAS_SRL_DEVICE:
-            case STATE_NO_SRL_DEVICE:
-                if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
-                {
-                    /* login */
-                    USB_connecting = true;
-                    current_state = STATE_CONNECTING;
-                    update_UI(current_state, previous_state);
-                    previous_state = current_state;
-                    login();
-                }
-
-                if (kb_Data[1] == kb_Mode)
-                {
-                    writeKeyFile();
-                    gfx_End();
-                    return 1;
-                }
-            case STATE_DASHBOARD:
-                dbg_printf("Dashboard");
-        }
+        key_state();
 
         update_UI(current_state, previous_state);
         previous_state = current_state;
 
-    } while (kb_Data[6] != kb_Clear);
+    } while (1);
 
-    EndProgram();
+    quitProgram();
 }
 
 void update_UI(program_state_t current_state, program_state_t previous_state) {
@@ -472,6 +469,7 @@ void readSRL()
         {
             dbg_printf("Logged in!");
             current_state = STATE_DASHBOARD;
+            key_state = state_dashboard;
             update_UI(current_state, previous_state);
             previous_state = current_state;
         }
@@ -489,44 +487,62 @@ void FreeMemory()
     free(connecting_sprite);
 }
 
-void EndProgram()
-{
-    FreeMemory();
-    usb_Cleanup();
-    gfx_End();
-}
-
-bool StringStartsWith(const char *a, const char *b)
-{
-   if(strncmp(a, b, strlen(b)) == 0) return 1;
-   return 0;
-}
-
-char substractStringFromBuffer(const char *a, const char *b)
-{
-    // find the last index of `/`
-    const char *path = a + strlen(a);
-    while (path != a && *path != '/') {
-        path--;
-    }
-    // Calculate the length
-    int length = path-a;
-    // Allocate an extra byte for null terminator
-    char *response = malloc(length+1);
-    // Copy the string into the newly allocated buffer
-    memcpy(response, a, length);
-    // Null-terminate the copied string
-    response[length] = '\0';
-    // Don't forget to free malloc-ed memory
-    free(response);
-    return response;
-}
-
-
 void sendSerialInitData()
 {
     serial_init_data_sent = true;
     char init_serial_connected_text_buffer[17] = "SERIAL_CONNECTED";
 
     srl_Write(&srl, init_serial_connected_text_buffer, strlen(init_serial_connected_text_buffer));
+}
+
+void common_state_function(void) {
+    if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
+    {
+        /* login */
+        USB_connecting = true;
+        current_state = STATE_CONNECTING;
+        update_UI(current_state, previous_state);
+        previous_state = current_state;
+        login();
+    }
+
+    if (kb_Data[1] == kb_Mode)
+    {
+        writeKeyFile();
+        quitProgram();
+    }
+}
+
+void state_dashboard(void) {
+    if (kb_Data[1] == kb_Window)
+    {
+        quitProgram();
+    }
+}
+
+void state_no_key_file(void) {
+    common_state_function();
+}
+
+void state_key_file_available(void) {
+    common_state_function();
+}
+
+void state_connecting(void) {
+    common_state_function();
+}
+
+void state_has_srl_device(void) {
+    common_state_function();
+}
+
+void state_no_srl_device(void) {
+    common_state_function();
+}
+
+void quitProgram() {
+    gfx_End();
+    usb_Cleanup();
+    FreeMemory();
+    exit(0);
 }
