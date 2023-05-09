@@ -89,11 +89,11 @@ typedef enum {
     STATE_CONNECTING,
     STATE_BRIDGE_CONNECTED,
     STATE_INTERNET_CONNECTED,
-    STATE_LOGGED_IN,
     STATE_HAS_SRL_DEVICE,
     STATE_NO_SRL_DEVICE,
     STATE_DASHBOARD,
 } program_state_t;
+program_state_t current_state, previous_state;
 void update_UI(program_state_t current_state, program_state_t previous_state);
 
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
@@ -153,8 +153,6 @@ static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_cal
 
 int main(void)
 {
-    program_state_t current_state, previous_state;
-
     /* SET GFX SPRITES */
     GFXspritesInit();
 
@@ -179,6 +177,8 @@ int main(void)
     {
         keyfile_available = false;
         current_state = STATE_NO_KEY_FILE;
+        update_UI(current_state, previous_state);
+        previous_state = current_state;
     }
     else
     {
@@ -246,21 +246,30 @@ int main(void)
             previous_state = current_state;
         }
 
-        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
-        {
-            /* login */
-            USB_connecting = true;
-            current_state = STATE_CONNECTING;
-            update_UI(current_state, previous_state);
-            previous_state = current_state;
-            login();
-        }
+        switch (current_state) {
+            case STATE_NO_KEY_FILE:
+            case STATE_KEY_FILE_AVAILABLE:
+            case STATE_CONNECTING:
+            case STATE_HAS_SRL_DEVICE:
+            case STATE_NO_SRL_DEVICE:
+                if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
+                {
+                    /* login */
+                    USB_connecting = true;
+                    current_state = STATE_CONNECTING;
+                    update_UI(current_state, previous_state);
+                    previous_state = current_state;
+                    login();
+                }
 
-        if (kb_Data[1] == kb_Mode)
-        {
-            writeKeyFile();
-            gfx_End();
-            return 1;
+                if (kb_Data[1] == kb_Mode)
+                {
+                    writeKeyFile();
+                    gfx_End();
+                    return 1;
+                }
+            case STATE_DASHBOARD:
+                dbg_printf("Dashboard");
         }
 
         update_UI(current_state, previous_state);
@@ -292,6 +301,18 @@ void update_UI(program_state_t current_state, program_state_t previous_state) {
         case STATE_NO_SRL_DEVICE:
             gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
             break;
+        case STATE_DASHBOARD:
+            gfx_ZeroScreen();
+            FreeMemory();
+            /* DASHBOARD MENU */
+            gfx_SetTextScale(2, 2);
+            gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
+            gfx_SetTextFGColor(224);
+            gfx_SetTextScale(1, 1);
+            gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
+            gfx_SetTextFGColor(255);
+            gfx_PrintStringXY("Logged in as ", 1, 45);
+            gfx_PrintStringXY(username, gfx_GetStringWidth("Logged in as "), 45);
     }
 }
 
@@ -441,13 +462,6 @@ void readSRL()
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
         }
 
-        if (strcmp(in_buffer, "Logged in!") == 0)
-        {
-            uint8_t dark_gray_color = 0x08;
-            gfx_SetColor(dark_gray_color);
-            gfx_FillScreen(dark_gray_color);
-        }
-
         if (strcmp(in_buffer, "Now send the token.") == 0)
         {
             char token_msg[64];
@@ -457,6 +471,9 @@ void readSRL()
         if (strcmp(in_buffer, "Logged in!") == 0)
         {
             dbg_printf("Logged in!");
+            current_state = STATE_DASHBOARD;
+            update_UI(current_state, previous_state);
+            previous_state = current_state;
         }
     }
 }
