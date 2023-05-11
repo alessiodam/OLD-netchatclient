@@ -1,9 +1,9 @@
 /*
  *--------------------------------------
- * Program Name: TI-84 Plus CE Net Client (Calculator)
+ * Program Name: TINET Client (Calculator)
  * Author: TKB Studios
  * License:
- * Description: Allows the user to communicate with the TI-84 Plus CE Net servers
+ * Description: Allows the user to communicate with the TINET servers
  *--------------------------------------
 */
 
@@ -32,7 +32,7 @@
 #include "gfx/gfx.h"
 
 /* DEFINE SETTINGS APPVAR */
-char *settingsappv = "TI84Sett";
+char *settingsappv = "NETSett";
 char *TEMP_PROGRAM = "_";
 char *MAIN_PROGRAM = "TINET";
 
@@ -178,7 +178,7 @@ int main(void)
 
     /* MAIN MENU */
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TI-84 Plus CE Net", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TI-84 Plus CE Net")) / 2), 5);
+    gfx_PrintStringXY("TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2), 5);
     gfx_SetTextFGColor(224);
     gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
     gfx_SetTextFGColor(255);
@@ -383,7 +383,7 @@ void KeyFileAvailableGFX()
 void NoKeyFileGFX()
 {
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
-    gfx_PrintStringXY("https://ti84pluscenet.tkbstudios.tk/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://ti84pluscenet.tkbstudios.tk/login")) / 2), 100);
+    gfx_PrintStringXY("https://tinet.tkbstudios.tk/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.tk/login")) / 2), 100);
     gfx_ScaledSprite_NoClip(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width * 4) / 2, 112, 4, 4);
 }
 

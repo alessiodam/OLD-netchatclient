@@ -1,14 +1,14 @@
-# TI-84 Plus CE Net Calculator client
-The official client for TI-84 Plus CE Net
+# TINET Calculator client
+The official client for TINET
 
-[![wakatime](https://wakatime.com/badge/github/tkbstudios/ti84pluscenet-calc.svg)](https://wakatime.com/badge/github/tkbstudios/ti84pluscenet-calc)
-[![Build and Release Master](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-master.yml/badge.svg)](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-master.yml)
-[![Build and Release](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-dev.yml/badge.svg)](https://github.com/tkbstudios/ti84pluscenet-calc/actions/workflows/build-release-dev.yml)
-[![Documentation Status](https://readthedocs.org/projects/ti84pluscenet-calc/badge/?version=latest)](https://ti84pluscenet-calc.readthedocs.io/en/latest/?badge=latest)
+[![wakatime](https://wakatime.com/badge/github/tkbstudios/tinet-calc.svg)](https://wakatime.com/badge/github/tkbstudios/tinet-calc)
+[![Build and Release Master](https://github.com/tkbstudios/tinet-calc/actions/workflows/build-release-master.yml/badge.svg)](https://github.com/tkbstudios/tinet-calc/actions/workflows/build-release-master.yml)
+[![Build and Release](https://github.com/tkbstudios/tinet-calc/actions/workflows/build-release-dev.yml/badge.svg)](https://github.com/tkbstudios/tinet-calc/actions/workflows/build-release-dev.yml)
+[![Documentation Status](https://readthedocs.org/projects/tinet-calc/badge/?version=latest)](https://tinet-calc.readthedocs.io/en/latest/?badge=latest)
 
 ## How to use
-1. Download the [latest client](https://github.com/tkbstudios/ti84pluscenet-calc/releases/latest).  
-2. Go to the [Web Dashboard](https://ti84pluscenet.tkbstudios.tk/)  
+1. Download the [latest client](https://github.com/tkbstudios/tinet-calc/releases/latest).  
+2. Go to the [Web Dashboard](https://tinet.tkbstudios.tk/)  
 3. Register or login an account.  
 4. On the dashboard, download your keyfile.  
 ![Download KeyFile Image](images/docs/downloadkeyfile.png)
@@ -23,6 +23,6 @@ The official client for TI-84 Plus CE Net
 ## What to do if it doesn't work
 If you came across this screen:  
 ![KeyFile Not Detected Image](images/docs/calcKeyFileNotDetected.png)  
-Then re-download your Keyfile from the [Web Dashboard](https://ti84pluscenet.tkbstudios.tk/) like explained above in step 4.  
-If after re-uploading your KeyFile, you still don't see the following screen, then open an issue [here](https://github.com/tkbstudios/ti84pluscenet-calc/issues).  
+Then re-download your Keyfile from the [Web Dashboard](https://tinet.tkbstudios.tk/) like explained above in step 4.  
+If after re-uploading your KeyFile, you still don't see the following screen, then open an issue [here](https://github.com/tkbstudios/tinet-calc/issues).  
 ![KeyFile Detected Image](images/docs/calcKeyFileDetected.png)  
