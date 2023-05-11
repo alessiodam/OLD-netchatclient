@@ -1,9 +1,9 @@
 /*
  *--------------------------------------
- * Program Name: TI-84 Plus CE Net Client (Calculator)
+ * Program Name: TINET Client (Calculator)
  * Author: TKB Studios
  * License:
- * Description: Allows the user to communicate with the TI-84 Plus CE Net servers
+ * Description: Allows the user to communicate with the TINET servers
  *--------------------------------------
 */
 
@@ -11,6 +11,7 @@
 /*
  *--------------Contributors--------------
  * TIny_Hacker
+ * ACagliano (Anthony Cagliano)
  *--------------------------------------
 */
 
@@ -25,22 +26,26 @@
 #include <compression.h>
 #include <srldrvce.h>
 #include <tice.h>
-
+#include <debug.h>
 
 /* Include the converted graphics file */
 #include "gfx/gfx.h"
 
 /* DEFINE SETTINGS APPVAR */
-char *settingsappv = "TI84Sett";
+char *settingsappv = "NETSett";
 char *TEMP_PROGRAM = "_";
 char *MAIN_PROGRAM = "TINET";
 
 /* DEFINE USER */
-uint8_t keyfile;
-uint8_t keyfile_buffer[256];
 bool keyfile_available = false;
-void *username;
-void *authkey;
+char *username;
+char *authkey;
+uint8_t appvar;
+
+/* READ BUFFERS */
+size_t read_flen ;
+uint8_t *ptr;
+char in_buffer[64];
 
 /* DEFINE SPRITES */
 gfx_sprite_t *login_qrcode_sprite;
@@ -56,14 +61,14 @@ void ConnectingGFX();
 void NoKeyFileGFX();
 void KeyFileAvailableGFX();
 void FreeMemory();
-void EndProgram();
-void ConnectSerial();
+void quitProgram();
+void ConnectSerial(char *token_msg);
+void login();
 void readSRL();
-bool StringStartsWith(const char *a, const char *b);
-char substractStringFromBuffer(const char *a, const char *b);
 void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
+void ConnectSerial(char *message);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -76,10 +81,30 @@ bool has_srl_device = false;
 uint8_t srl_buf[512];
 bool serial_init_data_sent = false;
 
-/* DEVELOPMENT VARS */
-bool no_GFX = true;
+/* DEFINE GUI ITERATIONS AND UPDATE FUNCTION */
+typedef enum {
+    STATE_LOGIN_SCREEN,
+    STATE_NO_KEY_FILE,
+    STATE_KEY_FILE_AVAILABLE,
+    STATE_CONNECTING,
+    STATE_BRIDGE_CONNECTED,
+    STATE_INTERNET_CONNECTED,
+    STATE_HAS_SRL_DEVICE,
+    STATE_NO_SRL_DEVICE,
+    STATE_DASHBOARD,
+} program_state_t;
+program_state_t current_state, previous_state;
+void update_UI(program_state_t current_state, program_state_t previous_state);
 
-/* DEFINE PACKETS */
+/* DEFINE KEY STATES AND FUNCTIONS */
+typedef void (*State)(void);
+State key_state;
+void state_no_srl_device();
+void state_has_srl_device();
+void state_no_key_file();
+void state_key_file_available();
+void state_connecting();
+void state_dashboard();
 
 
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
@@ -149,60 +174,57 @@ int main(void)
     /* GFX SETTINGS */
     GFXsettings();
 
-    /* LOADING SCREEN */
-    /*
-    for (int i = 0; i < 5; i++)
-    {
-        gfx_PrintStringXY("Loading program   ", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Loading program   ")) / 2), (GFX_LCD_HEIGHT / 2));
-        usleep(200);
-        gfx_PrintStringXY("Loading program.  ", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Loading program.  ")) / 2), (GFX_LCD_HEIGHT / 2));
-        usleep(200);
-        gfx_PrintStringXY("Loading program.. ", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Loading program.. ")) / 2), (GFX_LCD_HEIGHT / 2));
-        usleep(200);
-        gfx_PrintStringXY("Loading program...", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Loading program...")) / 2), (GFX_LCD_HEIGHT / 2));
-        usleep(200);
-    }
-    */
+    key_state = state_no_key_file;
 
     /* MAIN MENU */
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TI-84 Plus CE Net", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TI-84 Plus CE Net")) / 2), 5);
+    gfx_PrintStringXY("TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2), 5);
     gfx_SetTextFGColor(224);
     gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
-    /* KEYFILE CHECK */
-    /*
-    bool *new_var;
-    new_var = ti_Open("NetKey", "w+");
-    if (ti_Write('USERNAME:"tkbstudios"', sizeof('USERNAME:"tkbstudios"'), 1, new_var) != 1)
-    {
-        return 1;
-    }
-    ti_CloseAll();
-    */
+    appvar = ti_Open("NetKey", "r");
 
-    keyfile = ti_Open("NetKey", "r+");
-
-    if (keyfile == 0)
+    if (appvar == 0)
     {
         keyfile_available = false;
-        NoKeyFileGFX();
+        current_state = STATE_NO_KEY_FILE;
+        key_state = state_no_key_file;
+        update_UI(current_state, previous_state);
+        previous_state = current_state;
     }
     else
     {
+        read_flen = ti_GetSize(appvar);
+        uint8_t *data_ptr = (uint8_t *)ti_GetDataPtr(appvar);
+        ti_Close(appvar);
+
+        char *read_username = (char *)data_ptr;
+        username = read_username;
+        dbg_printf("User: %s\n", username);
+
+        size_t read_un_len = strlen(read_username) + 1;
+        data_ptr += (read_un_len + 1);
+        read_flen -= (read_un_len + 1);
+
+        char *read_key = (char *)data_ptr - 1;
+        size_t key_len = strlen(read_key);
+        authkey = read_key;
+        dbg_printf("Token: %s\n", authkey);
+
+        for (size_t i = 0; i < key_len; i++)
+            dbg_printf("%02x\n", data_ptr[i]);
+
         keyfile_available = true;
         KeyFileAvailableGFX();
     }
-
-    ti_Close(keyfile);
 
     const usb_standard_descriptors_t *usb_desc = srl_GetCDCStandardDescriptors();
     /* Initialize the USB driver with our event handler and the serial device descriptors */
     usb_error_t usb_error = usb_Init(handle_usb_event, NULL, usb_desc, USB_DEFAULT_INIT_FLAGS);
     if(usb_error) {
-       printf("usb init error %u\n", usb_error);
+       dbg_printf("usb init error %u\n", usb_error);
        return 1;
     }
 
@@ -212,6 +234,11 @@ int main(void)
         /* Update kb_Data */
         kb_Scan();
 
+        if (kb_Data[6] == kb_Clear)
+        {
+            quitProgram();
+        }
+
         /* Handle new USB events */
         usb_HandleEvents();
         if (has_srl_device)
@@ -219,65 +246,71 @@ int main(void)
             readSRL();
         }
 
-        if (has_srl_device == true)
+        if (has_srl_device && bridge_connected && !serial_init_data_sent)
         {
-            if (bridge_connected == true)
-            {
-                if (serial_init_data_sent == false)
-                {
-                    sendSerialInitData();
-                }
-            }
+            sendSerialInitData();
         }
 
         /* Draw the USB sprites */
         if(has_srl_device)
         {
-            // file deepcode ignore UseAfterFree: no.
-            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
+            current_state = STATE_HAS_SRL_DEVICE;
+            key_state = state_has_srl_device;
+            update_UI(current_state, previous_state);
+            previous_state = current_state;
         }
         else
         {
+            current_state = STATE_NO_SRL_DEVICE;
+            key_state = state_no_srl_device;
+            update_UI(current_state, previous_state);
+            previous_state = current_state;
+        }
+
+        key_state();
+
+        update_UI(current_state, previous_state);
+        previous_state = current_state;
+
+    } while (1);
+
+    quitProgram();
+}
+
+void update_UI(program_state_t current_state, program_state_t previous_state) {
+    if (current_state == previous_state) {
+        return; // No need to update the UI if the state hasn't changed
+    }
+
+    switch (current_state) {
+        case STATE_NO_KEY_FILE:
+            NoKeyFileGFX();
+            break;
+        case STATE_KEY_FILE_AVAILABLE:
+            KeyFileAvailableGFX();
+            break;
+        case STATE_CONNECTING:
+            ConnectingGFX();
+            break;
+        case STATE_HAS_SRL_DEVICE:
+            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
+            break;
+        case STATE_NO_SRL_DEVICE:
             gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
-        }
-
-        if (kb_Data[6] == kb_Enter)
-        {
-            if (USB_connected == false)
-            {
-                if (USB_connecting == false)
-                {
-                    if (bridge_connected == true)
-                    {
-                        if (srl_busy == false)
-                        {
-                            /* Connect Login and go dashboard script */
-                            USB_connecting = true;
-                            srl_busy = true;
-                            ConnectSerial();
-                            srl_busy = false;
-                        }
-                    }
-                }
-            }
-        }
-
-        /*// Doesn't work currently, serial crashes
-        if (kb_Data[7] == kb_Up)
-        {
-            getCurrentTime();
-        }
-        */
-
-        if (kb_Data[1] == kb_Mode)
-        {
-            writeKeyFile();
-            return 1;
-        }
-
-    } while (kb_Data[6] != kb_Clear);
-
-    EndProgram();
+            break;
+        case STATE_DASHBOARD:
+            gfx_ZeroScreen();
+            FreeMemory();
+            /* DASHBOARD MENU */
+            gfx_SetTextScale(2, 2);
+            gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
+            gfx_SetTextFGColor(224);
+            gfx_SetTextScale(1, 1);
+            gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
+            gfx_SetTextFGColor(255);
+            gfx_PrintStringXY("Logged in as ", 1, 45);
+            gfx_PrintStringXY(username, gfx_GetStringWidth("Logged in as "), 45);
+    }
 }
 
 void GFXspritesInit()
@@ -307,50 +340,50 @@ void GFXsettings()
 
 void writeKeyFile()
 {
-    uint8_t keyfile;
-    char username[14] = "sampleuser\\0";
-    char *key = "samplekey\\0";
-    keyfile = ti_Open("NetKey", "w+");
-    if(keyfile){
-        if(ti_Write(username, strlen(username), 1, keyfile) == 1)
-        {
-            printf("Write Success");
-        }
-        else
-        {
-            printf("Write failed");
-        }
+    uint8_t appvar;
+    char username[] = "sampleuser/0";
+    char key[] = "samplekey/0";
+    appvar = ti_Open("NetKey", "w");
+    if(appvar){
+        int bytes_written;
+        int file_position;
 
-        ti_Seek(13, SEEK_CUR, keyfile);
+        file_position = ti_Tell(appvar);
+        dbg_printf("Before writing username: file_position=%d\n", file_position);
 
-        if(ti_Write(key, strlen(key), 1, keyfile) == 1)
-        {
-            printf("Write Success");
-        }
-        else
-        {
-            printf("Write failed");
-        }
-        ti_Close(keyfile);
+        bytes_written = ti_Write(username, strlen(username) + 1, 1, appvar);
+        dbg_printf("Bytes written for username: %d\n", bytes_written);
+
+        file_position = ti_Tell(appvar);
+        dbg_printf("After writing username: file_position=%d\n", file_position);
+
+        bytes_written = ti_Write(key, strlen(key) + 1, 1, appvar);
+        dbg_printf("Bytes written for key: %d\n", bytes_written);
+
+        file_position = ti_Tell(appvar);
+        dbg_printf("After writing key: file_position=%d\n", file_position);
+
+        ti_Close(appvar);
     }
-    else { printf("File IO error"); }
+    else { dbg_printf("File IO error"); }
 }
-
-
 
 
 void KeyFileAvailableGFX()
 {
     gfx_PrintStringXY("Keyfile detected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 95);
-    ti_Read(keyfile_buffer, 18, 1, keyfile);
-//    gfx_PrintStringXY((strcat("Username: ", username)), ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 95);
+
+    char display_str[64]; // Adjust the buffer size as needed
+    snprintf(display_str, sizeof(display_str), "Username: %s", username);
+    gfx_PrintStringXY(display_str, ((GFX_LCD_WIDTH - gfx_GetStringWidth(display_str)) / 2), 135);
+
     gfx_PrintStringXY("Press [enter] to connect!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [enter] to connect!")) / 2), 65);
 }
 
 void NoKeyFileGFX()
 {
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
-    gfx_PrintStringXY("https://ti84pluscenet.tkbstudios.tk/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://ti84pluscenet.tkbstudios.tk/login")) / 2), 100);
+    gfx_PrintStringXY("https://tinet.tkbstudios.tk/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.tk/login")) / 2), 100);
     gfx_ScaledSprite_NoClip(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width * 4) / 2, 112, 4, 4);
 }
 
@@ -359,85 +392,32 @@ void ConnectingGFX()
     gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
 }
 
-/* old login no packet formatting */
-/*
-void ConnectSerial()
+
+void ConnectSerial(char *message)
 {
     srl_busy = true;
-    char write_data_buffer[27] = "USERNAME:";
-    char username_buffer[14];
-
-    keyfile = ti_Open("NetKey", "r");
-
-    if (keyfile)
-    {
-        if (ti_Read(username_buffer, 13, 1, keyfile) == 1)
-        {
-            username_buffer[13] = '\0'; // add null terminator
-
-            // concatenate the username to write_data_buffer, with a maximum length of 13
-            strncat(write_data_buffer, username_buffer, 13);
-            write_data_buffer[strlen(write_data_buffer)] = '\0'; // add null terminator
-
-            ti_Close(keyfile);
-
-            username = username_buffer;
-            gfx_PrintStringXY(username, (LCD_WIDTH - gfx_GetStringWidth(username)) / 2, LCD_HEIGHT / 2);
-
-            srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
-
-            ConnectingGFX();
-        } else { printf("Read failed"); }
-    } else { printf("FileIO error!"); }
+    srl_Write(&srl, message, strlen(message));
     srl_busy = false;
 }
-*/
 
-/* new login with packet formatting */
-void ConnectSerial()
+
+void login()
 {
-    srl_busy = true;
-    char write_data_buffer[18];
-
-    write_data_buffer[0] = "0x00";
-
-    keyfile = ti_Open("NetKey", "r");
-
-    if (keyfile)
-    {
-        /* Read 13 bytes starting from the second byte */
-        if (ti_Read(&write_data_buffer[5], 13, 1, keyfile) == 1)
-        {
-            ti_Close(keyfile);
-
-            // Add null terminator
-            write_data_buffer[14] = '\0';
-
-            gfx_PrintStringXY(write_data_buffer, (LCD_WIDTH - gfx_GetStringWidth(write_data_buffer)) / 2, LCD_HEIGHT / 2);
-            printf("%s", write_data_buffer);
-
-            printf("%s", write_data_buffer);
-
-            srl_Write(&srl, write_data_buffer, strlen(write_data_buffer));
-
-            ConnectingGFX();
-        } else { printf("Read failed"); }
-    } else { printf("FileIO error!"); }
-    srl_busy = false;
+    char username_msg[64];
+    snprintf(username_msg, sizeof(username_msg), "USERNAME:%s", username);
+    ConnectSerial(username_msg);
 }
 
 
 
 void readSRL()
-{
-    char in_buffer[64];
-    
+{    
     /* Read up to 64 bytes from the serial buffer */
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
 
     /* Check for an error (e.g. device disconneced) */
     if(bytes_read < 0) {
-        printf("error %d on srl_Read\n", bytes_read);
+        dbg_printf("error %d on srl_Read\n", bytes_read);
         has_srl_device = false;
     } else if(bytes_read > 0) {
         /* Add a null terminator to make in_buffer a valid C-style string */
@@ -479,13 +459,20 @@ void readSRL()
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
         }
 
-        /*// Doesn't work, crashes srl connection
-        if(strncmp((char*)in_buffer, "currentTime:", 12) == 0)
+        if (strcmp(in_buffer, "Now send the token.") == 0)
         {
-            gfx_PrintStringXY((char*)in_buffer, 5, 75);
-            srl_busy = false;
+            char token_msg[64];
+            snprintf(token_msg, sizeof(token_msg), "TOKEN:%s", authkey);
+            ConnectSerial(token_msg);
         }
-        */
+        if (strcmp(in_buffer, "Logged in!") == 0)
+        {
+            dbg_printf("Logged in!");
+            current_state = STATE_DASHBOARD;
+            key_state = state_dashboard;
+            update_UI(current_state, previous_state);
+            previous_state = current_state;
+        }
     }
 }
 
@@ -500,40 +487,6 @@ void FreeMemory()
     free(connecting_sprite);
 }
 
-void EndProgram()
-{
-    FreeMemory();
-    usb_Cleanup();
-    gfx_End();
-}
-
-bool StringStartsWith(const char *a, const char *b)
-{
-   if(strncmp(a, b, strlen(b)) == 0) return 1;
-   return 0;
-}
-
-char substractStringFromBuffer(const char *a, const char *b)
-{
-    // find the last index of `/`
-    const char *path = a + strlen(a);
-    while (path != a && *path != '/') {
-        path--;
-    }
-    // Calculate the length
-    int length = path-a;
-    // Allocate an extra byte for null terminator
-    char *response = malloc(length+1);
-    // Copy the string into the newly allocated buffer
-    memcpy(response, a, length);
-    // Null-terminate the copied string
-    response[length] = '\0';
-    // Don't forget to free malloc-ed memory
-    free(response);
-    return response;
-}
-
-
 void sendSerialInitData()
 {
     serial_init_data_sent = true;
@@ -542,14 +495,54 @@ void sendSerialInitData()
     srl_Write(&srl, init_serial_connected_text_buffer, strlen(init_serial_connected_text_buffer));
 }
 
-/*// Crashes SRL connection
-void getCurrentTime()
-{
-    char request_buffer[12] = "currentTime";
-    if (srl_busy == false)
+void common_state_function(void) {
+    if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
     {
-        srl_busy = true;
-        srl_Write(&srl, request_buffer, strlen(request_buffer));
+        /* login */
+        USB_connecting = true;
+        current_state = STATE_CONNECTING;
+        update_UI(current_state, previous_state);
+        previous_state = current_state;
+        login();
+    }
+
+    if (kb_Data[1] == kb_Mode)
+    {
+        writeKeyFile();
+        quitProgram();
     }
 }
-*/
+
+void state_dashboard(void) {
+    if (kb_Data[1] == kb_Window)
+    {
+        quitProgram();
+    }
+}
+
+void state_no_key_file(void) {
+    common_state_function();
+}
+
+void state_key_file_available(void) {
+    common_state_function();
+}
+
+void state_connecting(void) {
+    common_state_function();
+}
+
+void state_has_srl_device(void) {
+    common_state_function();
+}
+
+void state_no_srl_device(void) {
+    common_state_function();
+}
+
+void quitProgram() {
+    gfx_End();
+    usb_Cleanup();
+    FreeMemory();
+    exit(0);
+}

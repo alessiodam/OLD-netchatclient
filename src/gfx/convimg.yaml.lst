@@ -8,4 +8,8 @@ usb_disconnected.h
 usb_disconnected.c
 connecting.h
 connecting.c
+bridge_connected.h
+bridge_connected.c
+internet_connected.h
+internet_connected.c
 gfx.h

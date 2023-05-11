@@ -4,7 +4,7 @@
 
 NAME = TINET
 ICON = icon.png
-DESCRIPTION = "TI-84 Plus CE Net Client"
+DESCRIPTION = "TINET Client"
 COMPRESSED = YES
 ARCHIVED = YES
 
