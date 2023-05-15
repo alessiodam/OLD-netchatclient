@@ -52,12 +52,13 @@ gfx_sprite_t *login_qrcode_sprite;
 gfx_sprite_t *usb_connected_sprite;
 gfx_sprite_t *usb_disconnected_sprite;
 gfx_sprite_t *connecting_sprite;
+gfx_sprite_t *bridge_connected_sprite;
+gfx_sprite_t *internet_connected_sprite;
 
 /* DEFINE FUNCTIONS */
 void GFXspritesInit();
 void GFXsettings();
 void writeKeyFile();
-void ConnectingGFX();
 void NoKeyFileGFX();
 void KeyFileAvailableGFX();
 void FreeMemory();
@@ -290,7 +291,7 @@ void update_UI(program_state_t current_state, program_state_t previous_state) {
             KeyFileAvailableGFX();
             break;
         case STATE_CONNECTING:
-            ConnectingGFX();
+            gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
             break;
         case STATE_HAS_SRL_DEVICE:
             gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
@@ -321,12 +322,16 @@ void GFXspritesInit()
     usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
     usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
     connecting_sprite = gfx_MallocSprite(connecting_width, connecting_height);
+    bridge_connected_sprite = gfx_MallocSprite(bridge_connected_width, bridge_connected_height);
+    internet_connected_sprite = gfx_MallocSprite(internet_connected_width, internet_connected_height);
 
     /* Decompress  sprite */
     zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
     zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
     zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
     zx0_Decompress(connecting_sprite, connecting_compressed);
+    zx0_Decompress(bridge_connected_sprite, bridge_connected_compressed);
+    zx0_Decompress(internet_connected_sprite, internet_connected_compressed);
 }
 
 void GFXsettings()
@@ -384,14 +389,8 @@ void NoKeyFileGFX()
 {
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
     gfx_PrintStringXY("https://tinet.tkbstudios.tk/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.tk/login")) / 2), 100);
-    gfx_ScaledSprite_NoClip(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width * 4) / 2, 112, 4, 4);
+    gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 112);
 }
-
-void ConnectingGFX()
-{
-    gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
-}
-
 
 void ConnectSerial(char *message)
 {
