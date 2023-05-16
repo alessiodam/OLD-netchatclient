@@ -2,7 +2,7 @@
  *--------------------------------------
  * Program Name: TINET Client (Calculator)
  * Author: TKB Studios
- * License:
+ * License: Apache License 2.0
  * Description: Allows the user to communicate with the TINET servers
  *--------------------------------------
 */
@@ -28,7 +28,6 @@
 #include <tice.h>
 #include <debug.h>
 
-/* Include the converted graphics file */
 #include "gfx/gfx.h"
 
 /* DEFINE SETTINGS APPVAR */
@@ -87,36 +86,28 @@ bool serial_init_data_sent = false;
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
     usb_error_t err;
-    /* Delegate to srl USB callback */
     if ((err = srl_UsbEventCallback(event, event_data, callback_data)) != USB_SUCCESS)
         return err;
-    /* Enable newly connected devices */
     if(event == USB_DEVICE_CONNECTED_EVENT && !(usb_GetRole() & USB_ROLE_DEVICE)) {
         usb_device_t device = event_data;
         USB_connected = true;
         usb_ResetDevice(device);
     }
 
-    /* Call srl_Open on newly enabled device, if there is not currently a serial device in use */
     if(event == USB_HOST_CONFIGURE_EVENT || (event == USB_DEVICE_ENABLED_EVENT && !(usb_GetRole() & USB_ROLE_DEVICE))) {
 
-        /* If we already have a serial device, ignore the new one */
         if(has_srl_device) return USB_SUCCESS;
 
         usb_device_t device;
         if(event == USB_HOST_CONFIGURE_EVENT) {
-            /* Use the device representing the USB host. */
             device = usb_FindDevice(NULL, NULL, USB_SKIP_HUBS);
             if(device == NULL) return USB_SUCCESS;
         } else {
-            /* Use the newly enabled device */
             device = event_data;
         }
 
-        /* Initialize the serial library with the newly attached device */
         srl_error_t error = srl_Open(&srl, device, srl_buf, sizeof srl_buf, SRL_INTERFACE_ANY, 9600);
         if(error) {
-            /* Print the error code to the homescreen */
             gfx_End();
             os_ClrHome();
             printf("Error %d initting serial\n", error);
@@ -193,7 +184,6 @@ int main(void)
     }
 
     const usb_standard_descriptors_t *usb_desc = srl_GetCDCStandardDescriptors();
-    /* Initialize the USB driver with our event handler and the serial device descriptors */
     usb_error_t usb_error = usb_Init(handle_usb_event, NULL, usb_desc, USB_DEFAULT_INIT_FLAGS);
     if(usb_error) {
        dbg_printf("usb init error %u\n", usb_error);
@@ -206,7 +196,6 @@ int main(void)
         /* Update kb_Data */
         kb_Scan();
 
-        /* Handle new USB events */
         usb_HandleEvents();
         if (has_srl_device)
         {
@@ -218,7 +207,6 @@ int main(void)
             sendSerialInitData();
         }
 
-        /* Draw the USB sprites */
         if(has_srl_device)
         {
             gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
@@ -284,58 +272,39 @@ void dashboardScreen() {
     main();
 }
 
-void GPTScreen()
-{
+void GPTScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("TINET GPT", gfx_GetStringWidth("TINET GPT"), 0);
+    gfx_SetTextScale(1, 1);
+
     char output_buffer[64] = {0};
     strncpy(output_buffer, "GPT:", 4);
 
-    char input_string[50] = {0};
-    uint8_t cursor_pos = 0;
-
-    gfx_Begin();
-    gfx_ZeroScreen();
-    gfx_SetTextScale(1, 1);
-
+    const char *chars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
+    uint8_t key, i = 0;
+    char buffer[50] = {0};
+    
     do {
-        kb_Scan();
-
-        // Check if the Enter key is pressed
-        if (kb_Data[6] & kb_Enter) {
-            // Send the serial request with GPT:<string>
-            printf("GPT:%s\n", input_string);
-            strncpy(output_buffer + 4, input_string, sizeof(output_buffer) - 4 - 1);
-            ConnectSerial(output_buffer);
+        key = os_GetCSC();
+        if (chars[key]) {
+            buffer[i++] = chars[key];
+            printf("%hhu", key);
         }
+    } while (key != sk_Enter);
 
-        // Handle alphanumeric key input
-        for (uint8_t group = 1; group < 7; ++group) {
-            if (kb_Data[group]) {
-                for (uint8_t bit = 0; bit < 8; ++bit) {
-                    if (kb_Data[group] & (1 << bit)) {
-                        char key = os_GetCSC();
-                        if (key && cursor_pos < sizeof(input_string) - 1) {
-                            input_string[cursor_pos++] = key;
-                            input_string[cursor_pos] = '\0';
-                        }
-                    }
-                }
-            }
-        }
+    strncpy(output_buffer + 4, buffer, sizeof(output_buffer) - 4 - 1);
+    output_buffer[sizeof(output_buffer) - 1] = '\0';
 
-        // Clear the screen and display the updated input string
-        gfx_ZeroScreen();
-        gfx_PrintStringXY("Enter string: ", 10, 10);
-        gfx_PrintStringXY(input_string, 10, 20);
-        gfx_SwapDraw();
-    } while (kb_Data[6] != kb_Clear);
+    printf("%s", output_buffer);
+
+    while (!os_GetCSC());
 
     return;
 }
 
 void GFXspritesInit()
 {
-    /* Allocate space for the decompressed sprites */
-    /* Same as gfx_AllocSprite() */
     login_qrcode_sprite = gfx_MallocSprite(login_qr_width, login_qr_height);
     usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
     usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
@@ -396,7 +365,7 @@ void KeyFileAvailableGFX()
 {
     gfx_PrintStringXY("Keyfile detected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 95);
 
-    char display_str[64]; // Adjust the buffer size as needed
+    char display_str[64];
     snprintf(display_str, sizeof(display_str), "Username: %s", username);
     gfx_PrintStringXY(display_str, ((GFX_LCD_WIDTH - gfx_GetStringWidth(display_str)) / 2), 135);
 
@@ -429,15 +398,12 @@ void login()
 
 void readSRL()
 {    
-    /* Read up to 64 bytes from the serial buffer */
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
 
-    /* Check for an error (e.g. device disconneced) */
     if(bytes_read < 0) {
         dbg_printf("error %d on srl_Read\n", bytes_read);
         has_srl_device = false;
     } else if(bytes_read > 0) {
-        /* Add a null terminator to make in_buffer a valid C-style string */
         in_buffer[bytes_read] = '\0';
 
         /* BRIDGE CONNECTED GFX */
@@ -486,10 +452,6 @@ void readSRL()
         {
             dbg_printf("Logged in!");
             dashboardScreen();
-//            current_state = STATE_DASHBOARD;
-//            key_state = state_dashboard;
-//            update_UI(current_state, previous_state);
-//            previous_state = current_state;
         }
     }
 }
