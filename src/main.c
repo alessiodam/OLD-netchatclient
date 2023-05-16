@@ -71,6 +71,7 @@ void getCurrentTime();
 void printServerPing();
 void ConnectSerial(char *message);
 void dashboardScreen();
+void GPTScreen();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -82,22 +83,6 @@ srl_device_t srl;
 bool has_srl_device = false;
 uint8_t srl_buf[512];
 bool serial_init_data_sent = false;
-
-/* DEFINE GUI ITERATIONS AND UPDATE FUNCTION */
-typedef enum {
-    STATE_LOGIN_SCREEN,
-    STATE_NO_KEY_FILE,
-    STATE_KEY_FILE_AVAILABLE,
-    STATE_CONNECTING,
-    STATE_BRIDGE_CONNECTED,
-    STATE_INTERNET_CONNECTED,
-    STATE_HAS_SRL_DEVICE,
-    STATE_NO_SRL_DEVICE,
-    STATE_DASHBOARD,
-} program_state_t;
-program_state_t current_state, previous_state;
-void update_UI(program_state_t current_state, program_state_t previous_state);
-
 
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
@@ -179,9 +164,7 @@ int main(void)
     if (appvar == 0)
     {
         keyfile_available = false;
-        current_state = STATE_NO_KEY_FILE;
-        update_UI(current_state, previous_state);
-        previous_state = current_state;
+        NoKeyFileGFX();
     }
     else
     {
@@ -223,11 +206,6 @@ int main(void)
         /* Update kb_Data */
         kb_Scan();
 
-        if (kb_Data[6] == kb_Clear)
-        {
-            quitProgram();
-        }
-
         /* Handle new USB events */
         usb_HandleEvents();
         if (has_srl_device)
@@ -243,24 +221,18 @@ int main(void)
         /* Draw the USB sprites */
         if(has_srl_device)
         {
-            current_state = STATE_HAS_SRL_DEVICE;
-            update_UI(current_state, previous_state);
-            previous_state = current_state;
+            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
         }
         else
         {
-            current_state = STATE_NO_SRL_DEVICE;
-            update_UI(current_state, previous_state);
-            previous_state = current_state;
+            gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
         }
 
         if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
         {
             /* login */
             USB_connecting = true;
-            current_state = STATE_CONNECTING;
-            update_UI(current_state, previous_state);
-            previous_state = current_state;
+            gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
             login();
         }
 
@@ -269,9 +241,6 @@ int main(void)
             writeKeyFile();
             quitProgram();
         }
-
-        update_UI(current_state, previous_state);
-        previous_state = current_state;
 
     } while (kb_Data[6] != kb_Clear);
 
@@ -295,7 +264,7 @@ void dashboardScreen() {
         kb_Scan();
         if (kb_Data[5] == kb_Tan)
         {
-            printf("GPT");
+            GPTScreen();
         }
         if (kb_Data[4] == kb_Prgm)
         {
@@ -314,31 +283,6 @@ void dashboardScreen() {
 
     printf("CLEAR");
     quitProgram();
-}
-
-
-void update_UI(program_state_t current_state, program_state_t previous_state) {
-    if (current_state == previous_state) {
-        return; // No need to update the UI if the state hasn't changed
-    }
-
-    switch (current_state) {
-        case STATE_NO_KEY_FILE:
-            NoKeyFileGFX();
-            break;
-        case STATE_KEY_FILE_AVAILABLE:
-            KeyFileAvailableGFX();
-            break;
-        case STATE_CONNECTING:
-            gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
-            break;
-        case STATE_HAS_SRL_DEVICE:
-            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
-            break;
-        case STATE_NO_SRL_DEVICE:
-            gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
-            break;
-    }
 }
 
 void GFXspritesInit()
