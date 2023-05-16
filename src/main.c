@@ -70,6 +70,8 @@ void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
 void ConnectSerial(char *message);
+void dashboardScreen();
+void GPTScreen();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -81,32 +83,6 @@ srl_device_t srl;
 bool has_srl_device = false;
 uint8_t srl_buf[512];
 bool serial_init_data_sent = false;
-
-/* DEFINE GUI ITERATIONS AND UPDATE FUNCTION */
-typedef enum {
-    STATE_LOGIN_SCREEN,
-    STATE_NO_KEY_FILE,
-    STATE_KEY_FILE_AVAILABLE,
-    STATE_CONNECTING,
-    STATE_BRIDGE_CONNECTED,
-    STATE_INTERNET_CONNECTED,
-    STATE_HAS_SRL_DEVICE,
-    STATE_NO_SRL_DEVICE,
-    STATE_DASHBOARD,
-} program_state_t;
-program_state_t current_state, previous_state;
-void update_UI(program_state_t current_state, program_state_t previous_state);
-
-/* DEFINE KEY STATES AND FUNCTIONS */
-typedef void (*State)(void);
-State key_state;
-void state_no_srl_device();
-void state_has_srl_device();
-void state_no_key_file();
-void state_key_file_available();
-void state_connecting();
-void state_dashboard();
-
 
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
@@ -175,8 +151,6 @@ int main(void)
     /* GFX SETTINGS */
     GFXsettings();
 
-    key_state = state_no_key_file;
-
     /* MAIN MENU */
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2), 5);
@@ -190,10 +164,7 @@ int main(void)
     if (appvar == 0)
     {
         keyfile_available = false;
-        current_state = STATE_NO_KEY_FILE;
-        key_state = state_no_key_file;
-        update_UI(current_state, previous_state);
-        previous_state = current_state;
+        NoKeyFileGFX();
     }
     else
     {
@@ -229,16 +200,11 @@ int main(void)
        return 1;
     }
 
-    /* Loop until [2nd] is pressed */
+    /* Loop until [clear] is pressed */
     do
     {
         /* Update kb_Data */
         kb_Scan();
-
-        if (kb_Data[6] == kb_Clear)
-        {
-            quitProgram();
-        }
 
         /* Handle new USB events */
         usb_HandleEvents();
@@ -255,63 +221,68 @@ int main(void)
         /* Draw the USB sprites */
         if(has_srl_device)
         {
-            current_state = STATE_HAS_SRL_DEVICE;
-            key_state = state_has_srl_device;
-            update_UI(current_state, previous_state);
-            previous_state = current_state;
+            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
         }
         else
         {
-            current_state = STATE_NO_SRL_DEVICE;
-            key_state = state_no_srl_device;
-            update_UI(current_state, previous_state);
-            previous_state = current_state;
+            gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
         }
 
-        key_state();
+        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
+        {
+            /* login */
+            USB_connecting = true;
+            gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
+            login();
+        }
 
-        update_UI(current_state, previous_state);
-        previous_state = current_state;
+        if (kb_Data[1] == kb_Mode)
+        {
+            writeKeyFile();
+            quitProgram();
+        }
 
-    } while (1);
+    } while (kb_Data[6] != kb_Clear);
 
     quitProgram();
 }
 
-void update_UI(program_state_t current_state, program_state_t previous_state) {
-    if (current_state == previous_state) {
-        return; // No need to update the UI if the state hasn't changed
-    }
+void dashboardScreen() {
+    gfx_ZeroScreen();
+    /* DASHBOARD MENU */
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
+    gfx_SetTextFGColor(255);
+    gfx_PrintStringXY("Logged in as ", 1, 45);
+    gfx_PrintStringXY(username, gfx_GetStringWidth("Logged in as "), 45);
 
-    switch (current_state) {
-        case STATE_NO_KEY_FILE:
-            NoKeyFileGFX();
-            break;
-        case STATE_KEY_FILE_AVAILABLE:
-            KeyFileAvailableGFX();
-            break;
-        case STATE_CONNECTING:
-            gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
-            break;
-        case STATE_HAS_SRL_DEVICE:
-            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
-            break;
-        case STATE_NO_SRL_DEVICE:
-            gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
-            break;
-        case STATE_DASHBOARD:
-            gfx_ZeroScreen();
-            FreeMemory();
-            /* DASHBOARD MENU */
-            gfx_SetTextScale(2, 2);
-            gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
-            gfx_SetTextFGColor(224);
-            gfx_SetTextScale(1, 1);
-            gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
-            gfx_SetTextFGColor(255);
-            gfx_PrintStringXY("Logged in as ", 1, 45);
-            gfx_PrintStringXY(username, gfx_GetStringWidth("Logged in as "), 45);
-    }
+    do
+    {
+        kb_Scan();
+        if (kb_Data[5] == kb_Tan)
+        {
+            GPTScreen();
+        }
+        if (kb_Data[4] == kb_Prgm)
+        {
+            printf("Chat");
+        }
+        if (kb_Data[2] == kb_Recip)
+        {
+            printf("Drive");
+        }
+        if (kb_Data[2] == kb_Math)
+        {
+            printf("Account");
+        }
+        
+    } while (kb_Data[6] != kb_Clear);
+
+    printf("CLEAR");
+    quitProgram();
 }
 
 void GFXspritesInit()
@@ -467,10 +438,11 @@ void readSRL()
         if (strcmp(in_buffer, "Logged in!") == 0)
         {
             dbg_printf("Logged in!");
-            current_state = STATE_DASHBOARD;
-            key_state = state_dashboard;
-            update_UI(current_state, previous_state);
-            previous_state = current_state;
+            dashboardScreen();
+//            current_state = STATE_DASHBOARD;
+//            key_state = state_dashboard;
+//            update_UI(current_state, previous_state);
+//            previous_state = current_state;
         }
     }
 }
@@ -492,51 +464,6 @@ void sendSerialInitData()
     char init_serial_connected_text_buffer[17] = "SERIAL_CONNECTED";
 
     srl_Write(&srl, init_serial_connected_text_buffer, strlen(init_serial_connected_text_buffer));
-}
-
-void common_state_function(void) {
-    if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
-    {
-        /* login */
-        USB_connecting = true;
-        current_state = STATE_CONNECTING;
-        update_UI(current_state, previous_state);
-        previous_state = current_state;
-        login();
-    }
-
-    if (kb_Data[1] == kb_Mode)
-    {
-        writeKeyFile();
-        quitProgram();
-    }
-}
-
-void state_dashboard(void) {
-    if (kb_Data[1] == kb_Window)
-    {
-        quitProgram();
-    }
-}
-
-void state_no_key_file(void) {
-    common_state_function();
-}
-
-void state_key_file_available(void) {
-    common_state_function();
-}
-
-void state_connecting(void) {
-    common_state_function();
-}
-
-void state_has_srl_device(void) {
-    common_state_function();
-}
-
-void state_no_srl_device(void) {
-    common_state_function();
 }
 
 void quitProgram() {
