@@ -281,8 +281,55 @@ void dashboardScreen() {
         
     } while (kb_Data[6] != kb_Clear);
 
-    printf("CLEAR");
-    quitProgram();
+    main();
+}
+
+void GPTScreen()
+{
+    char output_buffer[64] = {0};
+    strncpy(output_buffer, "GPT:", 4);
+
+    char input_string[50] = {0};
+    uint8_t cursor_pos = 0;
+
+    gfx_Begin();
+    gfx_ZeroScreen();
+    gfx_SetTextScale(1, 1);
+
+    do {
+        kb_Scan();
+
+        // Check if the Enter key is pressed
+        if (kb_Data[6] & kb_Enter) {
+            // Send the serial request with GPT:<string>
+            printf("GPT:%s\n", input_string);
+            strncpy(output_buffer + 4, input_string, sizeof(output_buffer) - 4 - 1);
+            ConnectSerial(output_buffer);
+        }
+
+        // Handle alphanumeric key input
+        for (uint8_t group = 1; group < 7; ++group) {
+            if (kb_Data[group]) {
+                for (uint8_t bit = 0; bit < 8; ++bit) {
+                    if (kb_Data[group] & (1 << bit)) {
+                        char key = os_GetCSC();
+                        if (key && cursor_pos < sizeof(input_string) - 1) {
+                            input_string[cursor_pos++] = key;
+                            input_string[cursor_pos] = '\0';
+                        }
+                    }
+                }
+            }
+        }
+
+        // Clear the screen and display the updated input string
+        gfx_ZeroScreen();
+        gfx_PrintStringXY("Enter string: ", 10, 10);
+        gfx_PrintStringXY(input_string, 10, 20);
+        gfx_SwapDraw();
+    } while (kb_Data[6] != kb_Clear);
+
+    return;
 }
 
 void GFXspritesInit()
