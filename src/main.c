@@ -27,6 +27,7 @@
 #include <srldrvce.h>
 #include <tice.h>
 #include <debug.h>
+#include <stdbool.h>
 
 #include "gfx/gfx.h"
 
@@ -71,6 +72,8 @@ void printServerPing();
 void ConnectSerial(char *message);
 void dashboardScreen();
 void GPTScreen();
+void AccountScreen();
+bool startsWith(const char *str, const char *prefix);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -264,7 +267,8 @@ void dashboardScreen() {
         }
         if (kb_Data[2] == kb_Math)
         {
-            printf("Account");
+            ConnectSerial("accountInfo");
+            sleep(1000)
         }
         
     } while (kb_Data[6] != kb_Clear);
@@ -275,7 +279,7 @@ void dashboardScreen() {
 void GPTScreen() {
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET GPT", gfx_GetStringWidth("TINET GPT"), 0);
+    gfx_PrintStringXY("TINET GPT", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET GPT")) / 2), 0);
     gfx_SetTextScale(1, 1);
 
     char output_buffer[64] = {0};
@@ -300,6 +304,20 @@ void GPTScreen() {
 
     while (!os_GetCSC());
 
+    return;
+}
+
+void AccountScreen()
+{
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("TINET Account", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Account")) / 2), 0);
+    gfx_SetTextScale(1, 1);
+    do
+    {
+        kb_Scan();
+    } while (kb_Data[6] != kb_Clear);
+    
     return;
 }
 
@@ -453,6 +471,11 @@ void readSRL()
             dbg_printf("Logged in!");
             dashboardScreen();
         }
+
+        if (startsWith(in_buffer, "accountInfo:")) {
+            printf("accountInfo recieved\n");
+            printf("%s", in_buffer);
+        }
     }
 }
 
@@ -480,4 +503,8 @@ void quitProgram() {
     usb_Cleanup();
     FreeMemory();
     exit(0);
+}
+
+bool startsWith(const char *str, const char *prefix) {
+    return strncmp(str, prefix, strlen(prefix)) == 0;
 }
