@@ -268,7 +268,7 @@ void dashboardScreen() {
         if (kb_Data[2] == kb_Math)
         {
             ConnectSerial("accountInfo");
-            sleep(1000)
+            sleep(1000);
         }
         
     } while (kb_Data[6] != kb_Clear);
