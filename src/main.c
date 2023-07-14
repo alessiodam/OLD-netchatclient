@@ -481,16 +481,22 @@ void readSRL()
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
         }
 
-        if (strcmp(in_buffer, "Now send the token.") == 0)
+        if (strcmp(in_buffer, "SEND_TOKEN") == 0)
         {
             char token_msg[64];
             snprintf(token_msg, sizeof(token_msg), "TOKEN:%s", authkey);
             ConnectSerial(token_msg);
         }
-        if (strcmp(in_buffer, "Logged in!") == 0)
+        if (strcmp(in_buffer, "LOGIN_SUCCESS") == 0)
         {
             dbg_printf("Logged in!");
             dashboardScreen();
+        }
+
+        if (strcmp(in_buffer, "MAIL_NOT_VERIFIED") == 0)
+        {
+            dbg_printf("Logged in!");
+            printf("Mail not\nverified!");
         }
 
         if (startsWith(in_buffer, "accountInfo:"))
