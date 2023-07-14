@@ -5,7 +5,7 @@
  * License: Apache License 2.0
  * Description: Allows the user to communicate with the TINET servers
  *--------------------------------------
-*/
+ */
 
 /* When contributing, please add your username in the list here */
 /*
@@ -13,8 +13,7 @@
  * TIny_Hacker
  * ACagliano (Anthony Cagliano)
  *--------------------------------------
-*/
-
+ */
 
 #include <string.h>
 #include <sys/lcd.h>
@@ -43,7 +42,7 @@ char *authkey;
 uint8_t appvar;
 
 /* READ BUFFERS */
-size_t read_flen ;
+size_t read_flen;
 uint8_t *ptr;
 char in_buffer[64];
 
@@ -91,39 +90,50 @@ static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_cal
     usb_error_t err;
     if ((err = srl_UsbEventCallback(event, event_data, callback_data)) != USB_SUCCESS)
         return err;
-    if(event == USB_DEVICE_CONNECTED_EVENT && !(usb_GetRole() & USB_ROLE_DEVICE)) {
+    if (event == USB_DEVICE_CONNECTED_EVENT && !(usb_GetRole() & USB_ROLE_DEVICE))
+    {
         usb_device_t device = event_data;
         USB_connected = true;
         usb_ResetDevice(device);
     }
 
-    if(event == USB_HOST_CONFIGURE_EVENT || (event == USB_DEVICE_ENABLED_EVENT && !(usb_GetRole() & USB_ROLE_DEVICE))) {
+    if (event == USB_HOST_CONFIGURE_EVENT || (event == USB_DEVICE_ENABLED_EVENT && !(usb_GetRole() & USB_ROLE_DEVICE)))
+    {
 
-        if(has_srl_device) return USB_SUCCESS;
+        if (has_srl_device)
+            return USB_SUCCESS;
 
         usb_device_t device;
-        if(event == USB_HOST_CONFIGURE_EVENT) {
+        if (event == USB_HOST_CONFIGURE_EVENT)
+        {
             device = usb_FindDevice(NULL, NULL, USB_SKIP_HUBS);
-            if(device == NULL) return USB_SUCCESS;
-        } else {
+            if (device == NULL)
+                return USB_SUCCESS;
+        }
+        else
+        {
             device = event_data;
         }
 
         srl_error_t error = srl_Open(&srl, device, srl_buf, sizeof srl_buf, SRL_INTERFACE_ANY, 9600);
-        if(error) {
+        if (error)
+        {
             gfx_End();
             os_ClrHome();
             printf("Error %d initting serial\n", error);
-            while(os_GetCSC());
+            while (os_GetCSC())
+                ;
             return 0;
             return USB_SUCCESS;
         }
         has_srl_device = true;
     }
 
-    if(event == USB_DEVICE_DISCONNECTED_EVENT) {
+    if (event == USB_DEVICE_DISCONNECTED_EVENT)
+    {
         usb_device_t device = event_data;
-        if(device == srl.dev) {
+        if (device == srl.dev)
+        {
             USB_connected = false;
             srl_Close(&srl);
             has_srl_device = false;
@@ -188,9 +198,10 @@ int main(void)
 
     const usb_standard_descriptors_t *usb_desc = srl_GetCDCStandardDescriptors();
     usb_error_t usb_error = usb_Init(handle_usb_event, NULL, usb_desc, USB_DEFAULT_INIT_FLAGS);
-    if(usb_error) {
-       dbg_printf("usb init error %u\n", usb_error);
-       return 1;
+    if (usb_error)
+    {
+        dbg_printf("usb init error %u\n", usb_error);
+        return 1;
     }
 
     /* Loop until [clear] is pressed */
@@ -210,7 +221,7 @@ int main(void)
             sendSerialInitData();
         }
 
-        if(has_srl_device)
+        if (has_srl_device)
         {
             gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
         }
@@ -238,7 +249,8 @@ int main(void)
     quitProgram();
 }
 
-void dashboardScreen() {
+void dashboardScreen()
+{
     gfx_ZeroScreen();
     /* DASHBOARD MENU */
     gfx_SetTextScale(2, 2);
@@ -270,13 +282,14 @@ void dashboardScreen() {
             ConnectSerial("accountInfo");
             sleep(1000);
         }
-        
+
     } while (kb_Data[6] != kb_Clear);
 
     main();
 }
 
-void GPTScreen() {
+void GPTScreen()
+{
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET GPT", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET GPT")) / 2), 0);
@@ -287,24 +300,29 @@ void GPTScreen() {
 
     const char *chars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
     uint8_t key, i = 0;
-    char buffer[50] = {0};
-    
-    do {
+    char buffer[64] = {0};
+
+    do
+    {
         key = os_GetCSC();
-        if (chars[key]) {
+        if (chars[key])
+        {
             buffer[i++] = chars[key];
-            printf("%hhu", key);
+            printf("%c", chars[key]);
         }
     } while (key != sk_Enter);
 
-    strncpy(output_buffer + 4, buffer, sizeof(output_buffer) - 4 - 1);
-    output_buffer[sizeof(output_buffer) - 1] = '\0';
+    // strncpy(output_buffer + 4, buffer, sizeof(output_buffer) - 4 - 1);
+    // output_buffer[sizeof(output_buffer) - 1] = '\0';
 
-    printf("%s", output_buffer);
+    printf("\n%s", buffer);
+    printf("\n%i", sizeof(buffer));
+    // printf("\n%s", output_buffer);
+    ConnectSerial(buffer);
+    sleep(1000);
 
-    while (!os_GetCSC());
-
-    return;
+    while (!os_GetCSC())
+        ;
 }
 
 void AccountScreen()
@@ -317,7 +335,7 @@ void AccountScreen()
     {
         kb_Scan();
     } while (kb_Data[6] != kb_Clear);
-    
+
     return;
 }
 
@@ -354,7 +372,8 @@ void writeKeyFile()
     char username[] = "sampleuser/0";
     char key[] = "samplekey/0";
     appvar = ti_Open("NetKey", "w");
-    if(appvar){
+    if (appvar)
+    {
         int bytes_written;
         int file_position;
 
@@ -375,9 +394,11 @@ void writeKeyFile()
 
         ti_Close(appvar);
     }
-    else { dbg_printf("File IO error"); }
+    else
+    {
+        dbg_printf("File IO error");
+    }
 }
-
 
 void KeyFileAvailableGFX()
 {
@@ -393,7 +414,7 @@ void KeyFileAvailableGFX()
 void NoKeyFileGFX()
 {
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
-    gfx_PrintStringXY("https://tinet.tkbstudios.tk/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.tk/login")) / 2), 100);
+    gfx_PrintStringXY("https://tinet.tkbstudios.com/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/login")) / 2), 100);
     gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 112);
 }
 
@@ -404,7 +425,6 @@ void ConnectSerial(char *message)
     srl_busy = false;
 }
 
-
 void login()
 {
     char username_msg[64];
@@ -412,16 +432,17 @@ void login()
     ConnectSerial(username_msg);
 }
 
-
-
 void readSRL()
-{    
+{
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
 
-    if(bytes_read < 0) {
+    if (bytes_read < 0)
+    {
         dbg_printf("error %d on srl_Read\n", bytes_read);
         has_srl_device = false;
-    } else if(bytes_read > 0) {
+    }
+    else if (bytes_read > 0)
+    {
         in_buffer[bytes_read] = '\0';
 
         /* BRIDGE CONNECTED GFX */
@@ -472,13 +493,13 @@ void readSRL()
             dashboardScreen();
         }
 
-        if (startsWith(in_buffer, "accountInfo:")) {
+        if (startsWith(in_buffer, "accountInfo:"))
+        {
             printf("accountInfo recieved\n");
             printf("%s", in_buffer);
         }
     }
 }
-
 
 void FreeMemory()
 {
@@ -498,13 +519,15 @@ void sendSerialInitData()
     srl_Write(&srl, init_serial_connected_text_buffer, strlen(init_serial_connected_text_buffer));
 }
 
-void quitProgram() {
+void quitProgram()
+{
     gfx_End();
     usb_Cleanup();
     FreeMemory();
     exit(0);
 }
 
-bool startsWith(const char *str, const char *prefix) {
+bool startsWith(const char *str, const char *prefix)
+{
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
