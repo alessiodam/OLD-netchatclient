@@ -47,12 +47,12 @@ uint8_t *ptr;
 char in_buffer[64];
 
 /* DEFINE SPRITES */
-gfx_sprite_t *login_qrcode_sprite;
-gfx_sprite_t *usb_connected_sprite;
-gfx_sprite_t *usb_disconnected_sprite;
-gfx_sprite_t *connecting_sprite;
-gfx_sprite_t *bridge_connected_sprite;
-gfx_sprite_t *internet_connected_sprite;
+gfx_sprite_t *login_qrcode_sprite = NULL;
+gfx_sprite_t *usb_connected_sprite = NULL;
+gfx_sprite_t *usb_disconnected_sprite = NULL;
+gfx_sprite_t *connecting_sprite = NULL;
+gfx_sprite_t *bridge_connected_sprite = NULL;
+gfx_sprite_t *internet_connected_sprite = NULL;
 
 /* DEFINE FUNCTIONS */
 void GFXspritesInit();
@@ -73,9 +73,15 @@ void dashboardScreen();
 void GPTScreen();
 void AccountScreen();
 bool startsWith(const char *str, const char *prefix);
+/*
+void LoadDashboardSprites();
+void LoadUSBSprites();
+void FreeSprites();
+*/
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
+bool prev_USB_connected = false;
 bool USB_connecting = false;
 bool bridge_connected = false;
 bool internet_connected = false;
@@ -146,7 +152,7 @@ static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_cal
 int main(void)
 {
     /* SET GFX SPRITES */
-    GFXspritesInit();
+    //GFXspritesInit();
 
     /* GFX BEGIN */
     gfx_Begin();
@@ -191,7 +197,7 @@ int main(void)
 
         for (size_t i = 0; i < key_len; i++)
             dbg_printf("%02x\n", data_ptr[i]);
-
+        
         keyfile_available = true;
         KeyFileAvailableGFX();
     }
@@ -204,6 +210,7 @@ int main(void)
         return 1;
     }
 
+    //LoadUSBSprites();
     /* Loop until [clear] is pressed */
     do
     {
@@ -221,20 +228,26 @@ int main(void)
             sendSerialInitData();
         }
 
-        if (has_srl_device)
+        /* Check if USB state has changed */
+        if (prev_USB_connected != USB_connected)
         {
-            gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
-        }
-        else
-        {
-            gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
+            prev_USB_connected = USB_connected;
+
+            /* Redraw the appropriate sprite based on USB state */
+            if (USB_connected)
+            {
+                //gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
+            }
+            else
+            {
+                //gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
+            }
         }
 
         if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
         {
-            /* login */
             USB_connecting = true;
-            gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
+            //gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
             login();
         }
 
@@ -249,6 +262,56 @@ int main(void)
     quitProgram();
 }
 
+void displayUserStats(const char *stats)
+{
+    // Parse the received user stats and display them on the screen
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
+    gfx_SetTextFGColor(255);
+    gfx_SetTextScale(1, 1);
+
+    // Split the received stats using the delimiter ";"
+    char *statTokens[8];
+    char *token = strtok(stats, ";");
+    int i = 0;
+    while (token != NULL && i < 8)
+    {
+        statTokens[i++] = token;
+        token = strtok(NULL, ";");
+    }
+
+    // Display each user stat on the screen
+    int y = 65;
+    gfx_PrintStringXY("User Stats:", 1, y);
+    y += 20;
+    gfx_PrintStringXY("MB Used This Month: ", 1, y);
+    gfx_PrintString(statTokens[0]);
+    y += 15;
+    gfx_PrintStringXY("MB Used Total: ", 1, y);
+    gfx_PrintString(statTokens[1]);
+    y += 15;
+    gfx_PrintStringXY("Requests This Month: ", 1, y);
+    gfx_PrintString(statTokens[2]);
+    y += 15;
+    gfx_PrintStringXY("Total Requests: ", 1, y);
+    gfx_PrintString(statTokens[3]);
+    y += 15;
+    gfx_PrintStringXY("Plan: ", 1, y);
+    gfx_PrintString(statTokens[4]);
+    y += 15;
+    gfx_PrintStringXY("Time Online (seconds): ", 1, y);
+    gfx_PrintString(statTokens[5]);
+    y += 15;
+    gfx_PrintStringXY("Last Login (epoch time): ", 1, y);
+    gfx_PrintString(statTokens[6]);
+    y += 15;
+    gfx_PrintStringXY("Profile Public: ", 1, y);
+    gfx_PrintString(statTokens[7]);
+}
+
 void dashboardScreen()
 {
     gfx_ZeroScreen();
@@ -261,6 +324,9 @@ void dashboardScreen()
     gfx_SetTextFGColor(255);
     gfx_PrintStringXY("Logged in as ", 1, 45);
     gfx_PrintStringXY(username, gfx_GetStringWidth("Logged in as "), 45);
+
+    /* Load sprites for dashboard screen */
+    //LoadDashboardSprites();
 
     do
     {
@@ -280,12 +346,20 @@ void dashboardScreen()
         if (kb_Data[2] == kb_Math)
         {
             ConnectSerial("accountInfo");
-            sleep(1000);
+
+            char in_buffer[64];
+            size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
+            if (bytes_read > 0)
+            {
+                in_buffer[bytes_read] = '\0';
+                if (startsWith(in_buffer, "accountInfo:"))
+                {
+                    displayUserStats(in_buffer + strlen("accountInfo:"));
+                }
+            }
         }
 
     } while (kb_Data[6] != kb_Clear);
-
-    main();
 }
 
 void GPTScreen()
@@ -348,7 +422,6 @@ void GFXspritesInit()
     bridge_connected_sprite = gfx_MallocSprite(bridge_connected_width, bridge_connected_height);
     internet_connected_sprite = gfx_MallocSprite(internet_connected_width, internet_connected_height);
 
-    /* Decompress  sprite */
     zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
     zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
     zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
@@ -415,7 +488,7 @@ void NoKeyFileGFX()
 {
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
     gfx_PrintStringXY("https://tinet.tkbstudios.com/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/login")) / 2), 100);
-    gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 112);
+    //gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 112);
 }
 
 void ConnectSerial(char *message)
@@ -510,7 +583,6 @@ void readSRL()
 void FreeMemory()
 {
     /* FREE MEMORY FROM SPRITES */
-    // file deepcode ignore DoubleFree: no.
     free(login_qrcode_sprite);
     free(usb_connected_sprite);
     free(usb_disconnected_sprite);
@@ -529,7 +601,7 @@ void quitProgram()
 {
     gfx_End();
     usb_Cleanup();
-    FreeMemory();
+    //GFXspritesFree();
     exit(0);
 }
 
@@ -537,3 +609,60 @@ bool startsWith(const char *str, const char *prefix)
 {
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
+
+/*
+void GFXspritesInit()
+{
+    login_qrcode_sprite = NULL;
+    usb_connected_sprite = NULL;
+    usb_disconnected_sprite = NULL;
+
+    LoadLoginQRCodeSprite();
+    LoadUSBConnectedSprite();
+    LoadUSBDIsconnectedSprite();
+}
+
+void GFXspritesFree()
+{
+    // Free the memory from specific sprites
+    if (login_qrcode_sprite != NULL)
+    {
+        gfx_FreeSprite(login_qrcode_sprite);
+        login_qrcode_sprite = NULL;
+    }
+    if (usb_connected_sprite != NULL)
+    {
+        gfx_FreeSprite(usb_connected_sprite);
+        usb_connected_sprite = NULL;
+    }
+    if (usb_disconnected_sprite != NULL)
+    {
+        gfx_FreeSprite(usb_disconnected_sprite);
+        usb_disconnected_sprite = NULL;
+    }
+}
+
+void LoadLoginQRCodeSprite()
+{
+    if (login_qrcode_sprite == NULL)
+    {
+        login_qrcode_sprite = gfx_MallocSprite(login_qr_width, login_qr_height);
+        zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
+    }
+}
+
+void LoadUSBSprites()
+{
+    if (usb_connected_sprite == NULL)
+    {
+        usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
+        zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
+    }
+
+    if (usb_disconnected_sprite == NULL)
+    {
+        usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
+        zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
+    }
+}
+*/
