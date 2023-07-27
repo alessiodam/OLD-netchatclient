@@ -54,7 +54,6 @@ gfx_sprite_t *internet_connected_sprite = NULL;
 /* DEFINE FUNCTIONS */
 void GFXspritesInit();
 void GFXsettings();
-void writeKeyFile();
 void NoKeyFileGFX();
 void KeyFileAvailableGFX();
 void FreeMemory();
@@ -252,12 +251,6 @@ int main(void)
             login();
         }
 
-        if (kb_Data[1] == kb_Mode)
-        {
-            writeKeyFile();
-            quitProgram();
-        }
-
     } while (kb_Data[6] != kb_Clear);
 
     quitProgram();
@@ -443,40 +436,6 @@ void GFXsettings()
     gfx_SetTextFGColor(255);
     gfx_SetTextBGColor(0);
     gfx_SetTextTransparentColor(0);
-}
-
-void writeKeyFile()
-{
-    uint8_t appvar;
-    char username[] = "sampleuser/0";
-    char key[] = "samplekey/0";
-    appvar = ti_Open("NETKEY", "w");
-    if (appvar)
-    {
-        int bytes_written;
-        int file_position;
-
-        file_position = ti_Tell(appvar);
-        dbg_printf("Before writing username: file_position=%d\n", file_position);
-
-        bytes_written = ti_Write(username, strlen(username) + 1, 1, appvar);
-        dbg_printf("Bytes written for username: %d\n", bytes_written);
-
-        file_position = ti_Tell(appvar);
-        dbg_printf("After writing username: file_position=%d\n", file_position);
-
-        bytes_written = ti_Write(key, strlen(key) + 1, 1, appvar);
-        dbg_printf("Bytes written for key: %d\n", bytes_written);
-
-        file_position = ti_Tell(appvar);
-        dbg_printf("After writing key: file_position=%d\n", file_position);
-
-        ti_Close(appvar);
-    }
-    else
-    {
-        dbg_printf("File IO error");
-    }
 }
 
 void KeyFileAvailableGFX()
