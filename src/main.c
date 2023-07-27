@@ -170,7 +170,7 @@ int main(void)
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
-    appvar = ti_Open("NetKey", "r");
+    appvar = ti_Open("NETKEY", "r");
 
     if (appvar == 0)
     {
@@ -450,7 +450,7 @@ void writeKeyFile()
     uint8_t appvar;
     char username[] = "sampleuser/0";
     char key[] = "samplekey/0";
-    appvar = ti_Open("NetKey", "w");
+    appvar = ti_Open("NETKEY", "w");
     if (appvar)
     {
         int bytes_written;
