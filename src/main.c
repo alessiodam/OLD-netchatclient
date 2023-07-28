@@ -58,13 +58,13 @@ void NoKeyFileGFX();
 void KeyFileAvailableGFX();
 void FreeMemory();
 void quitProgram();
-void ConnectSerial(char *token_msg);
+void SendSerial(char *token_msg);
 void login();
 void readSRL();
 void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
-void ConnectSerial(char *message);
+void SendSerial(char *message);
 void dashboardScreen();
 void GPTScreen();
 void AccountScreen();
@@ -354,7 +354,7 @@ void dashboardScreen()
         {
             delay(1000);
             printf("sending accountInfo");
-            ConnectSerial("accountInfo");
+            SendSerial("accountInfo");
         }
 
     } while (kb_Data[6] != kb_Clear);
@@ -391,7 +391,7 @@ void GPTScreen()
     printf("\n%s", buffer);
     printf("\n%i", sizeof(buffer));
     // printf("\n%s", output_buffer);
-    ConnectSerial(buffer);
+    SendSerial(buffer);
     sleep(1000);
 
     while (!os_GetCSC())
@@ -456,7 +456,7 @@ void NoKeyFileGFX()
     // gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 112);
 }
 
-void ConnectSerial(char *message)
+void SendSerial(char *message)
 {
     srl_Write(&srl, message, strlen(message));
 }
@@ -465,7 +465,7 @@ void login()
 {
     char username_msg[64];
     snprintf(username_msg, sizeof(username_msg), "USERNAME:%s", username);
-    ConnectSerial(username_msg);
+    SendSerial(username_msg);
 }
 
 void readSRL()
@@ -522,7 +522,7 @@ void readSRL()
         {
             char token_msg[64];
             snprintf(token_msg, sizeof(token_msg), "TOKEN:%s", authkey);
-            ConnectSerial(token_msg);
+            SendSerial(token_msg);
         }
         if (strcmp(in_buffer, "LOGIN_SUCCESS") == 0)
         {
