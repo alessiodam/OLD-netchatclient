@@ -256,52 +256,51 @@ int main(void)
     quitProgram();
 }
 
-void displayUserStats(const char *stats)
+void displayAccountInfo(const char *accountInfo)
 {
-    printf("userstats screen");
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET User Info", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET User Info")) / 2), 5);
+    gfx_PrintStringXY("TINET Account Info", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Account Info")) / 2), 5);
     gfx_SetTextFGColor(224);
     gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
-    char *statTokens[8];
-    char *token = strtok(stats, ";");
+    char *infoTokens[8];
+    char *token = strtok(accountInfo, ";");
     int i = 0;
     while (token != NULL && i < 8)
     {
-        statTokens[i++] = token;
+        infoTokens[i++] = token;
         token = strtok(NULL, ";");
     }
 
     int y = 65;
-    gfx_PrintStringXY("User Stats:", 1, y);
+    gfx_PrintStringXY("Account Info:", 1, y);
     y += 20;
     gfx_PrintStringXY("MB Used This Month: ", 1, y);
-    gfx_PrintString(statTokens[0]);
+    gfx_PrintString(infoTokens[0]);
     y += 15;
     gfx_PrintStringXY("MB Used Total: ", 1, y);
-    gfx_PrintString(statTokens[1]);
+    gfx_PrintString(infoTokens[1]);
     y += 15;
     gfx_PrintStringXY("Requests This Month: ", 1, y);
-    gfx_PrintString(statTokens[2]);
+    gfx_PrintString(infoTokens[2]);
     y += 15;
     gfx_PrintStringXY("Total Requests: ", 1, y);
-    gfx_PrintString(statTokens[3]);
+    gfx_PrintString(infoTokens[3]);
     y += 15;
     gfx_PrintStringXY("Plan: ", 1, y);
-    gfx_PrintString(statTokens[4]);
+    gfx_PrintString(infoTokens[4]);
     y += 15;
     gfx_PrintStringXY("Time Online (seconds): ", 1, y);
-    gfx_PrintString(statTokens[5]);
+    gfx_PrintString(infoTokens[5]);
     y += 15;
     gfx_PrintStringXY("Last Login (epoch time): ", 1, y);
-    gfx_PrintString(statTokens[6]);
+    gfx_PrintString(infoTokens[6]);
     y += 15;
     gfx_PrintStringXY("Profile Public: ", 1, y);
-    gfx_PrintString(statTokens[7]);
+    gfx_PrintString(infoTokens[7]);
 }
 
 void dashboardScreen()
@@ -328,10 +327,10 @@ void dashboardScreen()
         if (has_unread_data)
         {
             has_unread_data = false;
-            if (startsWith(in_buffer, "accountInfo:"))
+            if (startsWith(in_buffer, "ACCOUNT_INFO:"))
             {
-                printf("Got accountInfo:");
-                displayUserStats(in_buffer + strlen("accountInfo:"));
+                printf("Got ACCOUNT_INFO:");
+                displayAccountInfo(in_buffer + strlen("accountInfo:"));
             }
         }
 
@@ -352,8 +351,9 @@ void dashboardScreen()
         }
         if (kb_Data[2] == kb_Math)
         {
-            char accountInfoBuff[12] = "accountInfo";
+            char accountInfoBuff[13] = "ACCOUNT_INFO";
             SendSerial(accountInfoBuff);
+            printf("sent");
         }
 
     } while (kb_Data[6] != kb_Clear);
@@ -390,7 +390,7 @@ void GPTScreen()
     printf("\n%s", buffer);
     printf("\n%i", sizeof(buffer));
     // printf("\n%s", output_buffer);
-    SendSerial(buffer);
+    SendSerial(output_buffer);
     sleep(1000);
 
     while (!os_GetCSC())
@@ -535,10 +535,14 @@ void readSRL()
             printf("Mail not\nverified!");
         }
 
-        if (startsWith(in_buffer, "accountInfo:"))
+        if (startsWith(in_buffer, "ACCOUNT_INFO:"))
         {
-            printf("accountInfo recieved\n");
-            printf("%s", in_buffer);
+            displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
+        }
+
+        if (startsWith(in_buffer, "YOUR_IP:"))
+        {
+            displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
         }
     }
 }
