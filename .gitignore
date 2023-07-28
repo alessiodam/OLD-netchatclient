@@ -8,3 +8,4 @@ src/gfx/*.h
 convimg.out
 nul.d
 src/gfx/convimg.yaml.lst
+.idea
