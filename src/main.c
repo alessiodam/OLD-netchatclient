@@ -352,9 +352,8 @@ void dashboardScreen()
         }
         if (kb_Data[2] == kb_Math)
         {
-            delay(1000);
-            printf("sending accountInfo");
-            SendSerial("accountInfo");
+            char accountInfoBuff[12] = "accountInfo";
+            SendSerial(accountInfoBuff);
         }
 
     } while (kb_Data[6] != kb_Clear);
