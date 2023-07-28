@@ -557,8 +557,7 @@ void sendSerialInitData()
 {
     serial_init_data_sent = true;
     char init_serial_connected_text_buffer[17] = "SERIAL_CONNECTED";
-
-    srl_Write(&srl, init_serial_connected_text_buffer, strlen(init_serial_connected_text_buffer));
+    SendSerial(init_serial_connected_text_buffer);
 }
 
 void quitProgram()
