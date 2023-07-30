@@ -69,10 +69,10 @@ void dashboardScreen();
 void GPTScreen();
 void AccountScreen();
 bool startsWith(const char *str, const char *prefix);
-/*
-void LoadDashboardSprites();
-void LoadUSBSprites();
-void FreeSprites();
+/* 
+   void LoadDashboardSprites();
+   void LoadUSBSprites();
+   void FreeSprites();
 */
 
 /* DEFINE CONNECTION VARS */
