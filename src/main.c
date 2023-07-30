@@ -69,7 +69,7 @@ void dashboardScreen();
 void GPTScreen();
 void AccountScreen();
 bool startsWith(const char *str, const char *prefix);
-/* 
+/*
    void LoadDashboardSprites();
    void LoadUSBSprites();
    void FreeSprites();
@@ -358,7 +358,6 @@ void dashboardScreen()
 
     } while (kb_Data[6] != kb_Clear);
 }
-
 
 void GPTScreen()
 {
