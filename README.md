@@ -8,7 +8,7 @@ The official client for TINET
 
 ## How to use
 1. Download the [latest client](https://github.com/tkbstudios/tinet-calc/releases/latest).  
-2. Go to the [Web Dashboard](https://tinet.tkbstudios.tk/)  
+2. Go to the [Web Dashboard](https://tinet.tkbstudios.com/)  
 3. Register or login an account.  
 4. On the dashboard, download your keyfile.  
 ![Download KeyFile Image](images/docs/downloadkeyfile.png)
