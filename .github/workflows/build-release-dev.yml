@@ -5,43 +5,16 @@ on:
     branches:
       - dev
 
-  workflow_dispatch:
-    inputs:
-      trigger-build:
-        description: 'Trigger a build manually'
-        required: false
-        default: 'false'
-
 jobs:
-  check-commit:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Check commit message
-        id: check-commit-message
-        run: |
-          commit_message=$(git log --format=%B -n 1 ${{ github.sha }})
-          if [[ $commit_message == *"build"* ]]; then
-            echo "Commit message contains 'build'"
-            echo "::set-output name=contains_build::true"
-          else
-            echo "Commit message does not contain 'build'"
-            echo "::set-output name=contains_build::false"
-          fi
-
   build:
-    needs: check-commit
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get repository information
-        uses: actions/github-script@v4
+        uses: actions/github-script@v6
         with:
           script: |
             const repo = context.payload.repository.full_name;
@@ -53,22 +26,20 @@ jobs:
       - name: Download and extract CEdev
         run: |
           curl -sL https://github.com/CE-Programming/toolchain/releases/download/nightly/CEdev-Linux-nightly.tar.gz | tar xz
-
+      
       - name: Add CEdev to PATH
         run: |
           echo "CEdev/bin" >> $GITHUB_PATH
           echo $GITHUB_PATH
-
+      
       - name: Make GFX
         run: make gfx
-        if: needs.check-commit.outputs.contains_build == 'true'
 
       - name: Build TINET.8xp
         run: make
-        if: needs.check-commit.outputs.contains_build == 'true'
 
       - name: Upload TINET.8xp
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: TINET.8xp
           path: bin/TINET.8xp
@@ -77,13 +48,13 @@ jobs:
         uses: myrotvorets/set-commit-status-action@master
         if: always()
         with:
-          sha: ${{ github.sha }}
+          sha: ${{ steps.comment-branch.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ job.status }}
 
       - name: Create Development Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -93,7 +64,7 @@ jobs:
           prerelease: true
 
       - name: Add TINET.8xp to Release
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
