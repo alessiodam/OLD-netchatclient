@@ -91,6 +91,50 @@ gfx_sprite_t *bridge_connected_sprite = NULL;
 gfx_sprite_t *internet_connected_sprite = NULL;
 
 
+/* DEFINE BUTTONS */
+typedef struct {
+    int x, y;
+    int width, height;
+    const char *label;
+    void (*action)();
+} Button;
+
+void userStatsButtonPressed() {
+    printf("userstats button pressed\n");
+    sleep(1);
+}
+
+void RTCChatButtonPressed() {
+    printf("RTC Chat button pressed\n");
+    sleep(1);
+}
+
+void BucketsButtonPressed() {
+    printf("Buckets button pressed\n");
+    sleep(1);
+}
+
+Button dashboardButtons[] = {
+    {50, 60, 120, 30, "User stats", userStatsButtonPressed},
+    {50, 100, 120, 30, "RTC Chat", RTCChatButtonPressed},
+    {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
+};
+int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
+
+void drawButtons(Button *buttons, int numButtons, int selectedButton) {
+    for (int i = 0; i < numButtons; i++) {
+        if (i == selectedButton) {
+            gfx_SetColor(255);
+        } else {
+            gfx_SetColor(224);
+        }
+        gfx_Rectangle(buttons[i].x, buttons[i].y, buttons[i].width, buttons[i].height);
+        gfx_PrintStringXY(buttons[i].label, buttons[i].x + 10, buttons[i].y + 10);
+    }
+    sleep(1);
+}
+
+
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
     usb_error_t err;
@@ -315,6 +359,9 @@ void dashboardScreen()
     gfx_PrintStringXY("Logged in as ", 1, 45);
     gfx_PrintStringXY(username, gfx_GetStringWidth("Logged in as "), 45);
 
+    int selectedButton = 0;
+    drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
+
     do
     {
         kb_Scan();
@@ -324,38 +371,23 @@ void dashboardScreen()
             readSRL();
         }
 
-        if (has_unread_data)
-        {
-            has_unread_data = false;
-            if (startsWith(in_buffer, "ACCOUNT_INFO:"))
-            {
-                printf("Got ACCOUNT_INFO:");
-                displayAccountInfo(in_buffer + strlen("accountInfo:"));
-            }
-        }
-
-        // Handle other user input on the dashboard screen
-        // For example, check for button presses and react accordingly
-
-        if (kb_Data[5] == kb_Tan)
-        {
-            GPTScreen();
-        }
-        if (kb_Data[4] == kb_Prgm)
-        {
-            printf("Chat");
-        }
-        if (kb_Data[2] == kb_Recip)
-        {
-            printf("Drive");
-        }
         if (kb_Data[2] == kb_Math)
         {
             char accountInfoBuff[13] = "ACCOUNT_INFO";
             SendSerial(accountInfoBuff);
-            printf("sent");
         }
 
+        if (kb_Data[7] == kb_Down) {
+            selectedButton = (selectedButton + 1) % numDashboardButtons;
+            drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
+        }
+        else if (kb_Data[7] == kb_Up) {
+            selectedButton = (selectedButton - 1 + numDashboardButtons) % numDashboardButtons;
+            drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
+        }
+        else if (kb_Data[6] == kb_Enter) {
+            dashboardButtons[selectedButton].action();
+        }
     } while (kb_Data[6] != kb_Clear);
 }
 
@@ -390,7 +422,7 @@ void GPTScreen()
     printf("\n%i", sizeof(buffer));
     // printf("\n%s", output_buffer);
     SendSerial(output_buffer);
-    sleep(1000);
+    sleep(1);
 
     while (!os_GetCSC())
         ;
