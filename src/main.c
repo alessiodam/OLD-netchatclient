@@ -43,14 +43,6 @@ size_t read_flen;
 uint8_t *ptr;
 char in_buffer[64];
 
-/* DEFINE SPRITES */
-gfx_sprite_t *login_qrcode_sprite = NULL;
-gfx_sprite_t *usb_connected_sprite = NULL;
-gfx_sprite_t *usb_disconnected_sprite = NULL;
-gfx_sprite_t *connecting_sprite = NULL;
-gfx_sprite_t *bridge_connected_sprite = NULL;
-gfx_sprite_t *internet_connected_sprite = NULL;
-
 /* DEFINE FUNCTIONS */
 void GFXspritesInit();
 void GFXsettings();
@@ -64,7 +56,6 @@ void readSRL();
 void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
-void SendSerial(char *message);
 void dashboardScreen();
 void GPTScreen();
 void AccountScreen();
@@ -90,6 +81,15 @@ bool serial_init_data_sent = false;
 
 bool key_pressed = false;
 uint8_t debounce_delay = 10;
+
+/* DEFINE SPRITES */
+gfx_sprite_t *login_qrcode_sprite = NULL;
+gfx_sprite_t *usb_connected_sprite = NULL;
+gfx_sprite_t *usb_disconnected_sprite = NULL;
+gfx_sprite_t *connecting_sprite = NULL;
+gfx_sprite_t *bridge_connected_sprite = NULL;
+gfx_sprite_t *internet_connected_sprite = NULL;
+
 
 static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
 {
