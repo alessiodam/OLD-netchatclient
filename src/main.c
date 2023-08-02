@@ -50,7 +50,6 @@ void NoKeyFileGFX();
 void KeyFileAvailableGFX();
 void FreeMemory();
 void quitProgram();
-void SendSerial(char *token_msg);
 void login();
 void readSRL();
 void sendSerialInitData();
@@ -72,7 +71,6 @@ bool prev_USB_connected = false;
 bool USB_connecting = false;
 bool bridge_connected = false;
 bool internet_connected = false;
-bool srl_busy = false;
 bool has_unread_data = false;
 srl_device_t srl;
 bool has_srl_device = false;
@@ -90,6 +88,22 @@ gfx_sprite_t *connecting_sprite = NULL;
 gfx_sprite_t *bridge_connected_sprite = NULL;
 gfx_sprite_t *internet_connected_sprite = NULL;
 
+/* CONNECTION FUNCTIONS */
+void SendSerial(const char *message) {
+    size_t totalBytesWritten = 0;
+    size_t messageLength = strlen(message);
+
+    while (totalBytesWritten < messageLength) {
+        int bytesWritten = srl_Write(&srl, message + totalBytesWritten, messageLength - totalBytesWritten);
+        
+        if (bytesWritten < 0) {
+            printf("SRL W ERR");
+        }
+
+        totalBytesWritten += bytesWritten;
+    }
+}
+
 
 /* DEFINE BUTTONS */
 typedef struct {
@@ -99,23 +113,23 @@ typedef struct {
     void (*action)();
 } Button;
 
-void userStatsButtonPressed() {
-    printf("userstats button pressed\n");
-    sleep(1);
+void accountInfoButtonPressed() {
+    SendSerial("ACCOUNT_INFO");
+    msleep(500);
 }
 
 void RTCChatButtonPressed() {
-    printf("RTC Chat button pressed\n");
-    sleep(1);
+    printf("Chat btn press\n");
+    msleep(500);
 }
 
 void BucketsButtonPressed() {
-    printf("Buckets button pressed\n");
-    sleep(1);
+    printf("Buckets btn press\n");
+    msleep(500);
 }
 
 Button dashboardButtons[] = {
-    {50, 60, 120, 30, "User stats", userStatsButtonPressed},
+    {50, 60, 120, 30, "Account Info", accountInfoButtonPressed},
     {50, 100, 120, 30, "RTC Chat", RTCChatButtonPressed},
     {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
 };
@@ -131,7 +145,7 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton) {
         gfx_Rectangle(buttons[i].x, buttons[i].y, buttons[i].width, buttons[i].height);
         gfx_PrintStringXY(buttons[i].label, buttons[i].x + 10, buttons[i].y + 10);
     }
-    sleep(1);
+    msleep(500);
 }
 
 
@@ -288,7 +302,7 @@ int main(void)
             }
         }
 
-        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
+        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected)
         {
             USB_connecting = true;
             // gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
@@ -349,6 +363,8 @@ void displayAccountInfo(const char *accountInfo)
 
 void dashboardScreen()
 {
+    char hellomessage[6] = "hello";
+    SendSerial(hellomessage);
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
@@ -356,8 +372,12 @@ void dashboardScreen()
     gfx_SetTextScale(1, 1);
     gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
     gfx_SetTextFGColor(255);
-    gfx_PrintStringXY("Logged in as ", 1, 45);
-    gfx_PrintStringXY(username, gfx_GetStringWidth("Logged in as "), 45);
+    
+    int centerX = (GFX_LCD_WIDTH - gfx_GetStringWidth("Logged in as ")) / 2;
+
+    gfx_PrintStringXY("Logged in as ", centerX - gfx_GetStringWidth("Logged in as "), 45);
+
+    gfx_PrintStringXY(username, centerX, 45);
 
     int selectedButton = 0;
     drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
@@ -369,12 +389,6 @@ void dashboardScreen()
         if (has_srl_device)
         {
             readSRL();
-        }
-
-        if (kb_Data[2] == kb_Math)
-        {
-            char accountInfoBuff[13] = "ACCOUNT_INFO";
-            SendSerial(accountInfoBuff);
         }
 
         if (kb_Data[7] == kb_Down) {
@@ -422,7 +436,7 @@ void GPTScreen()
     printf("\n%i", sizeof(buffer));
     // printf("\n%s", output_buffer);
     SendSerial(output_buffer);
-    sleep(1);
+    msleep(1000);
 
     while (!os_GetCSC())
         ;
@@ -484,11 +498,6 @@ void NoKeyFileGFX()
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
     gfx_PrintStringXY("https://tinet.tkbstudios.com/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/login")) / 2), 100);
     // gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 112);
-}
-
-void SendSerial(char *message)
-{
-    srl_Write(&srl, message, strlen(message));
 }
 
 void login()
