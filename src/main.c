@@ -58,6 +58,7 @@ void printServerPing();
 void dashboardScreen();
 void GPTScreen();
 void AccountScreen();
+void mailNotVerifiedScreen();
 bool startsWith(const char *str, const char *prefix);
 /*
    void LoadDashboardSprites();
@@ -242,7 +243,6 @@ int main(void)
 
         char *read_username = (char *)data_ptr;
         username = read_username;
-        dbg_printf("User: %s\n", username);
 
         size_t read_un_len = strlen(read_username) + 1;
         data_ptr += (read_un_len + 1);
@@ -251,10 +251,6 @@ int main(void)
         char *read_key = (char *)data_ptr - 1;
         size_t key_len = strlen(read_key);
         authkey = read_key;
-        dbg_printf("Token: %s\n", authkey);
-
-        for (size_t i = 0; i < key_len; i++)
-            dbg_printf("%02x\n", data_ptr[i]);
 
         keyfile_available = true;
         KeyFileAvailableGFX();
@@ -264,7 +260,6 @@ int main(void)
     usb_error_t usb_error = usb_Init(handle_usb_event, NULL, usb_desc, USB_DEFAULT_INIT_FLAGS);
     if (usb_error)
     {
-        dbg_printf("usb init error %u\n", usb_error);
         return 1;
     }
 
@@ -511,10 +506,11 @@ void readSRL()
 {
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
 
+    
     if (bytes_read < 0)
     {
-        dbg_printf("error %d on srl_Read\n", bytes_read);
-        has_srl_device = false;
+        // has_srl_device = false;
+        printf("SRL 0B");
     }
     else if (bytes_read > 0)
     {
@@ -565,13 +561,11 @@ void readSRL()
         }
         if (strcmp(in_buffer, "LOGIN_SUCCESS") == 0)
         {
-            dbg_printf("Logged in!");
             dashboardScreen();
         }
 
         if (strcmp(in_buffer, "MAIL_NOT_VERIFIED") == 0)
         {
-            dbg_printf("Logged in!");
             printf("Mail not\nverified!");
         }
 
@@ -584,6 +578,7 @@ void readSRL()
         {
             displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
         }
+        has_unread_data = false;
     }
 }
 
