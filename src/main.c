@@ -56,10 +56,10 @@ void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
 void dashboardScreen();
-void GPTScreen();
 void AccountScreen();
 void mailNotVerifiedScreen();
 bool startsWith(const char *str, const char *prefix);
+void displayIP(const char *ipAddress);
 /*
    void LoadDashboardSprites();
    void LoadUSBSprites();
@@ -358,8 +358,6 @@ void displayAccountInfo(const char *accountInfo)
 
 void dashboardScreen()
 {
-    char hellomessage[6] = "hello";
-    SendSerial(hellomessage);
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
@@ -398,43 +396,6 @@ void dashboardScreen()
             dashboardButtons[selectedButton].action();
         }
     } while (kb_Data[6] != kb_Clear);
-}
-
-void GPTScreen()
-{
-    gfx_ZeroScreen();
-    gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET GPT", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET GPT")) / 2), 0);
-    gfx_SetTextScale(1, 1);
-
-    char output_buffer[64] = {0};
-    strncpy(output_buffer, "GPT:", 4);
-
-    const char *chars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
-    uint8_t key, i = 0;
-    char buffer[64] = {0};
-
-    do
-    {
-        key = os_GetCSC();
-        if (chars[key])
-        {
-            buffer[i++] = chars[key];
-            printf("%c", chars[key]);
-        }
-    } while (key != sk_Enter);
-
-    // strncpy(output_buffer + 4, buffer, sizeof(output_buffer) - 4 - 1);
-    // output_buffer[sizeof(output_buffer) - 1] = '\0';
-
-    printf("\n%s", buffer);
-    printf("\n%i", sizeof(buffer));
-    // printf("\n%s", output_buffer);
-    SendSerial(output_buffer);
-    msleep(1000);
-
-    while (!os_GetCSC())
-        ;
 }
 
 void AccountScreen()
@@ -518,16 +479,14 @@ void readSRL()
         has_unread_data = true;
 
         /* BRIDGE CONNECTED GFX */
-        if (strcmp(in_buffer, "bridgeConnected") == 0)
-        {
+        if (strcmp(in_buffer, "bridgeConnected") == 0) {
             bridge_connected = true;
             gfx_SetColor(0x00);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
             gfx_SetColor(0x00);
             gfx_PrintStringXY("Bridge connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge connected!")) / 2), 80);
         }
-        if (strcmp(in_buffer, "bridgeDisconnected") == 0)
-        {
+        if (strcmp(in_buffer, "bridgeDisconnected") == 0) {
             bridge_connected = false;
             gfx_SetColor(0x00);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
@@ -536,16 +495,14 @@ void readSRL()
         }
 
         /* Internet Connected GFX */
-        if (strcmp(in_buffer, "SERIAL_CONNECTED_CONFIRMED_BY_SERVER") == 0)
-        {
+        if (strcmp(in_buffer, "SERIAL_CONNECTED_CONFIRMED_BY_SERVER") == 0) {
             internet_connected = true;
             gfx_SetColor(0x00);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
             gfx_SetColor(0x00);
             gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 110);
         }
-        if (strcmp(in_buffer, "internetDisconnected") == 0)
-        {
+        if (strcmp(in_buffer, "internetDisconnected") == 0) {
             internet_connected = false;
             gfx_SetColor(0x00);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
@@ -553,30 +510,26 @@ void readSRL()
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
         }
 
-        if (strcmp(in_buffer, "SEND_TOKEN") == 0)
-        {
+        if (strcmp(in_buffer, "SEND_TOKEN") == 0) {
             char token_msg[64];
             snprintf(token_msg, sizeof(token_msg), "TOKEN:%s", authkey);
             SendSerial(token_msg);
         }
-        if (strcmp(in_buffer, "LOGIN_SUCCESS") == 0)
-        {
+
+        if (strcmp(in_buffer, "LOGIN_SUCCESS") == 0) {
             dashboardScreen();
         }
 
-        if (strcmp(in_buffer, "MAIL_NOT_VERIFIED") == 0)
-        {
+        if (strcmp(in_buffer, "MAIL_NOT_VERIFIED") == 0) {
             printf("Mail not\nverified!");
         }
 
-        if (startsWith(in_buffer, "ACCOUNT_INFO:"))
-        {
+        if (startsWith(in_buffer, "ACCOUNT_INFO:")) {
             displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
         }
 
-        if (startsWith(in_buffer, "YOUR_IP:"))
-        {
-            displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
+        if (startsWith(in_buffer, "YOUR_IP:")) {
+            displayIP(in_buffer + strlen("YOUR_IP:"));
         }
         has_unread_data = false;
     }
@@ -609,6 +562,10 @@ void quitProgram()
 bool startsWith(const char *str, const char *prefix)
 {
     return strncmp(str, prefix, strlen(prefix)) == 0;
+}
+
+void displayIP(const char *ipAddress) {
+    printf("Received IP address: %s\n", ipAddress);
 }
 
 /*
