@@ -60,6 +60,7 @@ void AccountScreen();
 void mailNotVerifiedScreen();
 bool startsWith(const char *str, const char *prefix);
 void displayIP(const char *ipAddress);
+void howToUseScreen();
 /*
    void LoadDashboardSprites();
    void LoadUSBSprites();
@@ -134,6 +135,23 @@ Button dashboardButtons[] = {
     {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
 };
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
+
+
+void loginButtonPressed() {
+    if (!USB_connected && !USB_connecting && bridge_connected) {
+        USB_connecting = true;
+        // gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
+        login();
+    }
+}
+
+Button mainMenuButtons[] = {
+    // Button properties: X (top left corner), Y (top left corner), width, height, label, function
+    {20, 160, 120, 30, "Login", loginButtonPressed},
+    {20, 200, 120, 30, "How to Use", howToUseScreen}
+};
+
+int numMainMenuButtons = sizeof(mainMenuButtons) / sizeof(mainMenuButtons[0]);
 
 void drawButtons(Button *buttons, int numButtons, int selectedButton) {
     for (int i = 0; i < numButtons; i++) {
@@ -247,36 +265,42 @@ int main(void) {
         KeyFileAvailableGFX();
     }
 
-    // Initialize USB communication
     const usb_standard_descriptors_t *usb_desc = srl_GetCDCStandardDescriptors();
     usb_error_t usb_error = usb_Init(handle_usb_event, NULL, usb_desc, USB_DEFAULT_INIT_FLAGS);
-    if (usb_error) {
+    if (usb_error)
+    {
+        printf("usb init error\n%u\n", usb_error);
+        sleep(2);
         return 1;
     }
 
-    // Main loop
+    int selectedButton = 0;
+    drawButtons(mainMenuButtons, numMainMenuButtons, selectedButton);
+
     do {
         kb_Scan();
 
         usb_HandleEvents();
-        if (has_srl_device) {
+        if (has_srl_device)
+        {
             readSRL();
         }
 
-        if (has_srl_device && bridge_connected && !serial_init_data_sent) {
+        if (has_srl_device && bridge_connected && !serial_init_data_sent)
+        {
             sendSerialInitData();
         }
 
-        if (prev_USB_connected != USB_connected) {
-            prev_USB_connected = USB_connected;
-            // Redraw appropriate USB state sprite
-            // gfx_Sprite(USB_connected ? usb_connected_sprite : usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
+        if (kb_Data[7] == kb_Down) {
+            selectedButton = (selectedButton + 1) % numMainMenuButtons;
+            drawButtons(mainMenuButtons, numMainMenuButtons, selectedButton);
         }
-
-        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected) {
-            USB_connecting = true;
-            // gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
-            login();
+        else if (kb_Data[7] == kb_Up) {
+            selectedButton = (selectedButton - 1 + numMainMenuButtons) % numMainMenuButtons;
+            drawButtons(mainMenuButtons, numMainMenuButtons, selectedButton);
+        }
+        else if (kb_Data[6] == kb_Enter) {
+            mainMenuButtons[selectedButton].action();
         }
     } while (kb_Data[6] != kb_Clear);
 
@@ -545,6 +569,25 @@ bool startsWith(const char *str, const char *prefix)
 
 void displayIP(const char *ipAddress) {
     printf("Received IP address: %s\n", ipAddress);
+}
+
+void howToUseScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("How To TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("How To TINET")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
+    gfx_SetTextFGColor(255);
+    gfx_SetTextScale(1, 1);
+
+    gfx_PrintStringXY("https://tinet.tkbstudios.com/", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/")) / 2, GFX_LCD_HEIGHT / 2);
+
+    do {
+        kb_Scan();
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
 }
 
 /*
