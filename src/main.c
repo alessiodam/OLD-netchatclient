@@ -115,8 +115,7 @@ typedef struct {
 } Button;
 
 void accountInfoButtonPressed() {
-    SendSerial("ACCOUNT_INFO");
-    msleep(500);
+    AccountScreen();
 }
 
 void RTCChatButtonPressed() {
@@ -404,9 +403,11 @@ void AccountScreen()
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET Account", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Account")) / 2), 0);
     gfx_SetTextScale(1, 1);
-    do
-    {
+    SendSerial("ACCOUNT_INFO");
+    printf("Sent serial");
+    do {
         kb_Scan();
+    
     } while (kb_Data[6] != kb_Clear);
 
     return;
