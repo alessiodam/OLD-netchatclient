@@ -207,35 +207,27 @@ static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_cal
     return USB_SUCCESS;
 }
 
-int main(void)
-{
-    /* SET GFX SPRITES */
-    // GFXspritesInit();
-
-    /* GFX BEGIN */
+int main(void) {
+    // Initialize graphics and settings
     gfx_Begin();
     gfx_SetPalette(global_palette, sizeof_global_palette, 0);
-
-    /* GFX SETTINGS */
     GFXsettings();
 
-    /* MAIN MENU */
+    // Display main menu
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2), 5);
+    gfx_PrintStringXY("TINET", (GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2, 5);
     gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
+    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
+    // Open and read appvar data
     appvar = ti_Open("NETKEY", "r");
-
-    if (appvar == 0)
-    {
+    if (appvar == 0) {
         keyfile_available = false;
         NoKeyFileGFX();
-    }
-    else
-    {
+    } else {
+        // Read and process appvar data
         read_flen = ti_GetSize(appvar);
         uint8_t *data_ptr = (uint8_t *)ti_GetDataPtr(appvar);
         ti_Close(appvar);
@@ -255,57 +247,42 @@ int main(void)
         KeyFileAvailableGFX();
     }
 
+    // Initialize USB communication
     const usb_standard_descriptors_t *usb_desc = srl_GetCDCStandardDescriptors();
     usb_error_t usb_error = usb_Init(handle_usb_event, NULL, usb_desc, USB_DEFAULT_INIT_FLAGS);
-    if (usb_error)
-    {
+    if (usb_error) {
         return 1;
     }
 
-    // LoadUSBSprites();
-    /* Loop until [clear] is pressed */
-    do
-    {
-        /* Update kb_Data */
+    // Main loop
+    do {
         kb_Scan();
 
         usb_HandleEvents();
-        if (has_srl_device)
-        {
+        if (has_srl_device) {
             readSRL();
         }
 
-        if (has_srl_device && bridge_connected && !serial_init_data_sent)
-        {
+        if (has_srl_device && bridge_connected && !serial_init_data_sent) {
             sendSerialInitData();
         }
 
-        /* Check if USB state has changed */
-        if (prev_USB_connected != USB_connected)
-        {
+        if (prev_USB_connected != USB_connected) {
             prev_USB_connected = USB_connected;
-
-            /* Redraw the appropriate sprite based on USB state */
-            if (USB_connected)
-            {
-                // gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
-            }
-            else
-            {
-                // gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
-            }
+            // Redraw appropriate USB state sprite
+            // gfx_Sprite(USB_connected ? usb_connected_sprite : usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
         }
 
-        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected)
-        {
+        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected) {
             USB_connecting = true;
             // gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
             login();
         }
-
     } while (kb_Data[6] != kb_Clear);
 
     quitProgram();
+
+    return 0;
 }
 
 void displayAccountInfo(const char *accountInfo)
@@ -403,7 +380,8 @@ void AccountScreen()
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET Account", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Account")) / 2), 0);
     gfx_SetTextScale(1, 1);
-    SendSerial("ACCOUNT_INFO");
+    char out_buff_msg[64] = "ACCOUNT_INFO";
+    SendSerial(out_buff_msg);
     printf("Sent serial");
     do {
         kb_Scan();
