@@ -30,8 +30,6 @@
 #include <stdbool.h>
 #include <tice.h>
 
-#include "gfx/gfx.h"
-
 /* DEFINE USER */
 bool keyfile_available = false;
 char *username;
@@ -81,14 +79,6 @@ bool serial_init_data_sent = false;
 
 bool key_pressed = false;
 uint8_t debounce_delay = 10;
-
-/* DEFINE SPRITES */
-gfx_sprite_t *login_qrcode_sprite = NULL;
-gfx_sprite_t *usb_connected_sprite = NULL;
-gfx_sprite_t *usb_disconnected_sprite = NULL;
-gfx_sprite_t *connecting_sprite = NULL;
-gfx_sprite_t *bridge_connected_sprite = NULL;
-gfx_sprite_t *internet_connected_sprite = NULL;
 
 /* CONNECTION FUNCTIONS */
 void SendSerial(const char *message) {
@@ -140,7 +130,6 @@ int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0])
 void loginButtonPressed() {
     if (!USB_connected && !USB_connecting && bridge_connected) {
         USB_connecting = true;
-        // gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
         login();
     }
 }
@@ -166,8 +155,7 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton) {
     msleep(500);
 }
 
-
-static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
+usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
 {
     usb_error_t err;
     if ((err = srl_UsbEventCallback(event, event_data, callback_data)) != USB_SUCCESS)
@@ -228,7 +216,6 @@ static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_cal
 int main(void) {
     // Initialize graphics and settings
     gfx_Begin();
-    gfx_SetPalette(global_palette, sizeof_global_palette, 0);
     GFXsettings();
 
     // Display main menu
@@ -415,23 +402,6 @@ void AccountScreen()
     return;
 }
 
-void GFXspritesInit()
-{
-    login_qrcode_sprite = gfx_MallocSprite(login_qr_width, login_qr_height);
-    usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
-    usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
-    connecting_sprite = gfx_MallocSprite(connecting_width, connecting_height);
-    bridge_connected_sprite = gfx_MallocSprite(bridge_connected_width, bridge_connected_height);
-    internet_connected_sprite = gfx_MallocSprite(internet_connected_width, internet_connected_height);
-
-    zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
-    zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
-    zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
-    zx0_Decompress(connecting_sprite, connecting_compressed);
-    zx0_Decompress(bridge_connected_sprite, bridge_connected_compressed);
-    zx0_Decompress(internet_connected_sprite, internet_connected_compressed);
-}
-
 void GFXsettings()
 {
     /* GFX SETTINGS */
@@ -456,7 +426,6 @@ void NoKeyFileGFX()
 {
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
     gfx_PrintStringXY("https://tinet.tkbstudios.com/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/login")) / 2), 100);
-    // gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 112);
 }
 
 void login()
@@ -536,15 +505,6 @@ void readSRL()
         }
         has_unread_data = false;
     }
-}
-
-void FreeMemory()
-{
-    /* FREE MEMORY FROM SPRITES */
-    free(login_qrcode_sprite);
-    free(usb_connected_sprite);
-    free(usb_disconnected_sprite);
-    free(connecting_sprite);
 }
 
 void sendSerialInitData()
