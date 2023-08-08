@@ -59,6 +59,8 @@ void mailNotVerifiedScreen();
 bool startsWith(const char *str, const char *prefix);
 void displayIP(const char *ipAddress);
 void howToUseScreen();
+void alreadyConnectedScreen();
+void userNotFoundScreen();
 /*
    void LoadDashboardSprites();
    void LoadUSBSprites();
@@ -496,6 +498,14 @@ void readSRL()
             printf("Mail not\nverified!");
         }
 
+        if (strcmp(in_buffer, "ALREADY_CONNECTED") == 0) {
+            alreadyConnectedScreen();
+        }
+
+        if (strcmp(in_buffer, "USER_NOT_FOUND") == 0) {
+            userNotFoundScreen();
+        }
+
         if (startsWith(in_buffer, "ACCOUNT_INFO:")) {
             displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
         }
@@ -542,6 +552,40 @@ void howToUseScreen() {
 
     gfx_PrintStringXY("https://tinet.tkbstudios.com/", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/")) / 2, GFX_LCD_HEIGHT / 2);
 
+    do {
+        kb_Scan();
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
+}
+
+void alreadyConnectedScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("Already Connected", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Already Connected")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("you're already connected to TINET", (GFX_LCD_WIDTH - gfx_GetStringWidth("you're already connected to TINET")) / 2, 35);
+    gfx_SetTextFGColor(255);
+    gfx_PrintStringXY("Is it not you?", (GFX_LCD_WIDTH - gfx_GetStringWidth("Is it not you?")) / 2, 65);
+    gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("Reset your calc key", (GFX_LCD_WIDTH - gfx_GetStringWidth("Reset your calc key")) / 2, 65);
+    gfx_PrintStringXY("And log out from everywhere", (GFX_LCD_WIDTH - gfx_GetStringWidth("And log out from everywhere")) / 2, 80);
+    gfx_PrintStringXY("on https://tinet.tkbstudios.com/dashboard", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/dashboard")) / 2, GFX_LCD_HEIGHT / 2);
+    do {
+        kb_Scan();
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
+}
+
+void userNotFoundScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("TINET USER NOT FOUND", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET USER NOT FOUND")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("Your user doesn't exist", (GFX_LCD_WIDTH - gfx_GetStringWidth("Your user doesn't exist")) / 2, 35);
     do {
         kb_Scan();
         if (kb_Data[6] == kb_Clear) {
