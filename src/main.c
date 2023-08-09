@@ -61,11 +61,6 @@ void displayIP(const char *ipAddress);
 void howToUseScreen();
 void alreadyConnectedScreen();
 void userNotFoundScreen();
-/*
-   void LoadDashboardSprites();
-   void LoadUSBSprites();
-   void FreeSprites();
-*/
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -593,60 +588,3 @@ void userNotFoundScreen() {
         }
     } while (1);
 }
-
-/*
-void GFXspritesInit()
-{
-    login_qrcode_sprite = NULL;
-    usb_connected_sprite = NULL;
-    usb_disconnected_sprite = NULL;
-
-    LoadLoginQRCodeSprite();
-    LoadUSBConnectedSprite();
-    LoadUSBDIsconnectedSprite();
-}
-
-void GFXspritesFree()
-{
-    // Free the memory from specific sprites
-    if (login_qrcode_sprite != NULL)
-    {
-        gfx_FreeSprite(login_qrcode_sprite);
-        login_qrcode_sprite = NULL;
-    }
-    if (usb_connected_sprite != NULL)
-    {
-        gfx_FreeSprite(usb_connected_sprite);
-        usb_connected_sprite = NULL;
-    }
-    if (usb_disconnected_sprite != NULL)
-    {
-        gfx_FreeSprite(usb_disconnected_sprite);
-        usb_disconnected_sprite = NULL;
-    }
-}
-
-void LoadLoginQRCodeSprite()
-{
-    if (login_qrcode_sprite == NULL)
-    {
-        login_qrcode_sprite = gfx_MallocSprite(login_qr_width, login_qr_height);
-        zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
-    }
-}
-
-void LoadUSBSprites()
-{
-    if (usb_connected_sprite == NULL)
-    {
-        usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
-        zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
-    }
-
-    if (usb_disconnected_sprite == NULL)
-    {
-        usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
-        zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
-    }
-}
-*/
