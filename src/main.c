@@ -29,6 +29,7 @@
 #include <debug.h>
 #include <stdbool.h>
 #include <tice.h>
+#include <ti/info.h>
 
 /* DEFINE USER */
 bool keyfile_available = false;
@@ -61,6 +62,7 @@ void displayIP(const char *ipAddress);
 void howToUseScreen();
 void alreadyConnectedScreen();
 void userNotFoundScreen();
+void calcIDneedsUpdateScreen();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -92,7 +94,6 @@ void SendSerial(const char *message) {
         totalBytesWritten += bytesWritten;
     }
 }
-
 
 /* DEFINE BUTTONS */
 typedef struct {
@@ -149,7 +150,7 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton) {
         gfx_Rectangle(buttons[i].x, buttons[i].y, buttons[i].width, buttons[i].height);
         gfx_PrintStringXY(buttons[i].label, buttons[i].x + 10, buttons[i].y + 10);
     }
-    msleep(500);
+    msleep(250);
 }
 
 usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
@@ -211,17 +212,36 @@ usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_d
 }
 
 int main(void) {
+    const system_info_t *systemInfo = os_GetSystemInfo();
+
+    if (systemInfo->hardwareType2 != 9) {
+        printf("%02X", systemInfo->hardwareType2);
+        printf("\n");
+        printf("not TI-84+CE");
+        msleep(500);
+        return 1;
+    }
+
     // Initialize graphics and settings
     gfx_Begin();
     GFXsettings();
 
     // Display main menu
+    gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET", (GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2, 5);
     gfx_SetTextFGColor(224);
     gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
+
+    /* CALC ID DISPLAY BOTTOM RIGHT */
+    char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
+    for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
+        sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
+    }
+
+    gfx_PrintStringXY(calcidStr, 320 - gfx_GetStringWidth(calcidStr), 232);
 
     // Open and read appvar data
     appvar = ti_Open("NETKEY", "r");
@@ -242,7 +262,6 @@ int main(void) {
         read_flen -= (read_un_len + 1);
 
         char *read_key = (char *)data_ptr - 1;
-        size_t key_len = strlen(read_key);
         authkey = read_key;
 
         keyfile_available = true;
@@ -508,6 +527,9 @@ void readSRL()
         if (startsWith(in_buffer, "YOUR_IP:")) {
             displayIP(in_buffer + strlen("YOUR_IP:"));
         }
+        if (startsWith(in_buffer, "CALC_ID_UPDATE_NEEDED")) {
+            calcIDneedsUpdateScreen();
+        }
         has_unread_data = false;
     }
 }
@@ -581,6 +603,37 @@ void userNotFoundScreen() {
     gfx_PrintStringXY("TINET USER NOT FOUND", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET USER NOT FOUND")) / 2), 5);
     gfx_SetTextFGColor(224);
     gfx_PrintStringXY("Your user doesn't exist", (GFX_LCD_WIDTH - gfx_GetStringWidth("Your user doesn't exist")) / 2, 35);
+    do {
+        kb_Scan();
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
+}
+
+void calcIDneedsUpdateScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("ID UPDATE", ((GFX_LCD_WIDTH - gfx_GetStringWidth("ID UPDATE")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("calc ID update", (GFX_LCD_WIDTH - gfx_GetStringWidth("calc ID update")) / 2, 35);
+    gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("update it on https://tinet.tkbstudios.com/dashboard", (GFX_LCD_WIDTH - gfx_GetStringWidth("update it on https://tinet.tkbstudios.com/dashboard")) / 2, 50);
+
+    const system_info_t *systemInfo = os_GetSystemInfo();
+    
+    if (systemInfo != NULL) {
+        gfx_PrintStringXY("calcid: ", 10 , 70);
+
+        char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
+        for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
+            sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
+        }
+        gfx_PrintStringXY(calcidStr, 10 + gfx_GetStringWidth("calcid: "), 70);
+    } else {
+        gfx_SetTextScale(2, 2);
+        gfx_PrintStringXY("Failed to get system info!", (GFX_LCD_WIDTH - gfx_GetStringWidth("Failed to get system info!")) / 2, GFX_LCD_HEIGHT / 2);
+    }
     do {
         kb_Scan();
         if (kb_Data[6] == kb_Clear) {
