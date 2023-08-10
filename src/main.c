@@ -57,7 +57,6 @@ void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
 void dashboardScreen();
-void AccountScreen();
 void mailNotVerifiedScreen();
 bool startsWith(const char *str, const char *prefix);
 void displayIP(const char *ipAddress);
@@ -109,7 +108,10 @@ typedef struct {
 } Button;
 
 void accountInfoButtonPressed() {
-    AccountScreen();
+    msleep(200);
+    char out_buff_msg[14] = "ACCOUNT_INFO";
+    SendSerial(out_buff_msg);
+    printf("sent srl");
 }
 
 void BucketsButtonPressed() {
@@ -312,7 +314,7 @@ int main(void) {
     return 0;
 }
 
-void displayAccountInfo(const char *accountInfo)
+void accountInfoScreen(const char *accountInfo)
 {
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
@@ -357,6 +359,15 @@ void displayAccountInfo(const char *accountInfo)
     y += 15;
     gfx_PrintStringXY("Profile Public: ", 1, y);
     gfx_PrintString(infoTokens[7]);
+    do {
+        kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+    } while (kb_Data[6] != kb_Clear);
 }
 
 void dashboardScreen()
@@ -402,30 +413,6 @@ void dashboardScreen()
             dashboardButtons[selectedButton].action();
         }
     } while (kb_Data[6] != kb_Clear);
-}
-
-void AccountScreen()
-{
-    gfx_ZeroScreen();
-    gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET Account", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Account")) / 2), 0);
-    gfx_SetTextScale(1, 1);
-    char out_buff_msg[64] = "ACCOUNT_INFO";
-    SendSerial(out_buff_msg);
-    printf("Sent serial");
-    do {
-        kb_Scan();
-
-        usb_HandleEvents();
-        if (has_srl_device)
-        {
-            readSRL();
-        }
-        
-        if (kb_Data[6] == kb_Clear) {
-            break;
-        }
-    } while (1);
 }
 
 void GFXsettings()
@@ -528,7 +515,8 @@ void readSRL()
         }
 
         if (startsWith(in_buffer, "ACCOUNT_INFO:")) {
-            displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
+            printf("got acc inf");
+            accountInfoScreen(in_buffer + strlen("ACCOUNT_INFO:"));
         }
 
         if (startsWith(in_buffer, "YOUR_IP:")) {
@@ -691,10 +679,10 @@ void RTCChatScreen() {
             readSRL();
         }
 
-        char output_buffer[128] = {0};
+        char output_buffer[64] = {0};
         strncpy(output_buffer, "RTC_CHAT:", 10);
 
-        char buffer[128] = {0};
+        char buffer[64] = {0};
         do
         {
             key = os_GetCSC();
@@ -707,12 +695,7 @@ void RTCChatScreen() {
 
         printf("\n%s", buffer);
         printf("\n%i", sizeof(buffer));
-        printf("\n%s", output_buffer);
         SendSerial(output_buffer);
-        msleep(1000);
-
-        if (kb_Data[6] == kb_Clear) {
-            break;
-        }
-    } while (1);
+        msleep(250);
+    } while (kb_Data[6] != kb_Clear);
 }
