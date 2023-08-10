@@ -446,9 +446,14 @@ void NoKeyFileGFX()
 
 void login()
 {
-    char username_msg[64];
-    snprintf(username_msg, sizeof(username_msg), "USERNAME:%s", username);
-    SendSerial(username_msg);
+    const system_info_t *systemInfo = os_GetSystemInfo();
+    char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
+    for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
+        sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
+    }
+    char login_msg[85];
+    snprintf(login_msg, sizeof(login_msg), "LOGIN:%s:%s:%s", calcidStr, username, authkey);
+    SendSerial(login_msg);
 }
 
 void readSRL()
@@ -496,12 +501,6 @@ void readSRL()
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
             gfx_SetColor(0x00);
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
-        }
-
-        if (strcmp(in_buffer, "SEND_TOKEN") == 0) {
-            char token_msg[64];
-            snprintf(token_msg, sizeof(token_msg), "TOKEN:%s", authkey);
-            SendSerial(token_msg);
         }
 
         if (strcmp(in_buffer, "LOGIN_SUCCESS") == 0) {
