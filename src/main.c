@@ -29,8 +29,7 @@
 #include <debug.h>
 #include <stdbool.h>
 #include <tice.h>
-
-#include "gfx/gfx.h"
+#include <ti/info.h>
 
 /* DEFINE USER */
 bool keyfile_available = false;
@@ -43,14 +42,6 @@ size_t read_flen;
 uint8_t *ptr;
 char in_buffer[64];
 
-/* DEFINE SPRITES */
-gfx_sprite_t *login_qrcode_sprite = NULL;
-gfx_sprite_t *usb_connected_sprite = NULL;
-gfx_sprite_t *usb_disconnected_sprite = NULL;
-gfx_sprite_t *connecting_sprite = NULL;
-gfx_sprite_t *bridge_connected_sprite = NULL;
-gfx_sprite_t *internet_connected_sprite = NULL;
-
 /* DEFINE FUNCTIONS */
 void GFXspritesInit();
 void GFXsettings();
@@ -58,22 +49,20 @@ void NoKeyFileGFX();
 void KeyFileAvailableGFX();
 void FreeMemory();
 void quitProgram();
-void SendSerial(char *token_msg);
 void login();
 void readSRL();
 void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
-void SendSerial(char *message);
 void dashboardScreen();
-void GPTScreen();
 void AccountScreen();
+void mailNotVerifiedScreen();
 bool startsWith(const char *str, const char *prefix);
-/*
-void LoadDashboardSprites();
-void LoadUSBSprites();
-void FreeSprites();
-*/
+void displayIP(const char *ipAddress);
+void howToUseScreen();
+void alreadyConnectedScreen();
+void userNotFoundScreen();
+void calcIDneedsUpdateScreen();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -81,7 +70,6 @@ bool prev_USB_connected = false;
 bool USB_connecting = false;
 bool bridge_connected = false;
 bool internet_connected = false;
-bool srl_busy = false;
 bool has_unread_data = false;
 srl_device_t srl;
 bool has_srl_device = false;
@@ -91,7 +79,81 @@ bool serial_init_data_sent = false;
 bool key_pressed = false;
 uint8_t debounce_delay = 10;
 
-static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data __attribute__((unused)))
+/* CONNECTION FUNCTIONS */
+void SendSerial(const char *message) {
+    size_t totalBytesWritten = 0;
+    size_t messageLength = strlen(message);
+
+    while (totalBytesWritten < messageLength) {
+        int bytesWritten = srl_Write(&srl, message + totalBytesWritten, messageLength - totalBytesWritten);
+        
+        if (bytesWritten < 0) {
+            printf("SRL W ERR");
+        }
+
+        totalBytesWritten += bytesWritten;
+    }
+}
+
+/* DEFINE BUTTONS */
+typedef struct {
+    int x, y;
+    int width, height;
+    const char *label;
+    void (*action)();
+} Button;
+
+void accountInfoButtonPressed() {
+    AccountScreen();
+}
+
+void RTCChatButtonPressed() {
+    printf("Chat btn press\n");
+    msleep(500);
+}
+
+void BucketsButtonPressed() {
+    printf("Buckets btn press\n");
+    msleep(500);
+}
+
+Button dashboardButtons[] = {
+    {50, 60, 120, 30, "Account Info", accountInfoButtonPressed},
+    {50, 100, 120, 30, "RTC Chat", RTCChatButtonPressed},
+    {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
+};
+int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
+
+
+void loginButtonPressed() {
+    if (!USB_connected && !USB_connecting && bridge_connected) {
+        USB_connecting = true;
+        login();
+    }
+}
+
+Button mainMenuButtons[] = {
+    // Button properties: X (top left corner), Y (top left corner), width, height, label, function
+    {20, 160, 120, 30, "Login", loginButtonPressed},
+    {20, 200, 120, 30, "How to Use", howToUseScreen}
+};
+
+int numMainMenuButtons = sizeof(mainMenuButtons) / sizeof(mainMenuButtons[0]);
+
+void drawButtons(Button *buttons, int numButtons, int selectedButton) {
+    for (int i = 0; i < numButtons; i++) {
+        if (i == selectedButton) {
+            gfx_SetColor(255);
+        } else {
+            gfx_SetColor(224);
+        }
+        gfx_Rectangle(buttons[i].x, buttons[i].y, buttons[i].width, buttons[i].height);
+        gfx_PrintStringXY(buttons[i].label, buttons[i].x + 10, buttons[i].y + 10);
+    }
+    msleep(250);
+}
+
+usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
 {
     usb_error_t err;
     if ((err = srl_UsbEventCallback(event, event_data, callback_data)) != USB_SUCCESS)
@@ -149,54 +211,58 @@ static usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_cal
     return USB_SUCCESS;
 }
 
-int main(void)
-{
-    /* SET GFX SPRITES */
-    // GFXspritesInit();
+int main(void) {
+    const system_info_t *systemInfo = os_GetSystemInfo();
 
-    /* GFX BEGIN */
+    if (systemInfo->hardwareType2 != 9) {
+        printf("%02X", systemInfo->hardwareType2);
+        printf("\n");
+        printf("not TI-84+CE");
+        msleep(500);
+        return 1;
+    }
+
+    // Initialize graphics and settings
     gfx_Begin();
-    gfx_SetPalette(global_palette, sizeof_global_palette, 0);
-
-    /* GFX SETTINGS */
     GFXsettings();
 
-    /* MAIN MENU */
+    // Display main menu
+    gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2), 5);
+    gfx_PrintStringXY("TINET", (GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2, 5);
     gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
+    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
-    appvar = ti_Open("NETKEY", "r");
+    /* CALC ID DISPLAY BOTTOM RIGHT */
+    char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
+    for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
+        sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
+    }
 
-    if (appvar == 0)
-    {
+    gfx_PrintStringXY(calcidStr, 320 - gfx_GetStringWidth(calcidStr), 232);
+
+    // Open and read appvar data
+    appvar = ti_Open("NETKEY", "r");
+    if (appvar == 0) {
         keyfile_available = false;
         NoKeyFileGFX();
-    }
-    else
-    {
+    } else {
+        // Read and process appvar data
         read_flen = ti_GetSize(appvar);
         uint8_t *data_ptr = (uint8_t *)ti_GetDataPtr(appvar);
         ti_Close(appvar);
 
         char *read_username = (char *)data_ptr;
         username = read_username;
-        dbg_printf("User: %s\n", username);
 
         size_t read_un_len = strlen(read_username) + 1;
         data_ptr += (read_un_len + 1);
         read_flen -= (read_un_len + 1);
 
         char *read_key = (char *)data_ptr - 1;
-        size_t key_len = strlen(read_key);
         authkey = read_key;
-        dbg_printf("Token: %s\n", authkey);
-
-        for (size_t i = 0; i < key_len; i++)
-            dbg_printf("%02x\n", data_ptr[i]);
 
         keyfile_available = true;
         KeyFileAvailableGFX();
@@ -206,15 +272,15 @@ int main(void)
     usb_error_t usb_error = usb_Init(handle_usb_event, NULL, usb_desc, USB_DEFAULT_INIT_FLAGS);
     if (usb_error)
     {
-        dbg_printf("usb init error %u\n", usb_error);
+        printf("usb init error\n%u\n", usb_error);
+        sleep(2);
         return 1;
     }
 
-    // LoadUSBSprites();
-    /* Loop until [clear] is pressed */
-    do
-    {
-        /* Update kb_Data */
+    int selectedButton = 0;
+    drawButtons(mainMenuButtons, numMainMenuButtons, selectedButton);
+
+    do {
         kb_Scan();
 
         usb_HandleEvents();
@@ -228,80 +294,69 @@ int main(void)
             sendSerialInitData();
         }
 
-        /* Check if USB state has changed */
-        if (prev_USB_connected != USB_connected)
-        {
-            prev_USB_connected = USB_connected;
-
-            /* Redraw the appropriate sprite based on USB state */
-            if (USB_connected)
-            {
-                // gfx_Sprite(usb_connected_sprite, 25, LCD_HEIGHT - 40);
-            }
-            else
-            {
-                // gfx_Sprite(usb_disconnected_sprite, 25, LCD_HEIGHT - 40);
-            }
+        if (kb_Data[7] == kb_Down) {
+            selectedButton = (selectedButton + 1) % numMainMenuButtons;
+            drawButtons(mainMenuButtons, numMainMenuButtons, selectedButton);
         }
-
-        if (kb_Data[6] == kb_Enter && !USB_connected && !USB_connecting && bridge_connected && !srl_busy)
-        {
-            USB_connecting = true;
-            // gfx_Sprite(connecting_sprite, (GFX_LCD_WIDTH - connecting_width) / 2, 112);
-            login();
+        else if (kb_Data[7] == kb_Up) {
+            selectedButton = (selectedButton - 1 + numMainMenuButtons) % numMainMenuButtons;
+            drawButtons(mainMenuButtons, numMainMenuButtons, selectedButton);
         }
-
+        else if (kb_Data[6] == kb_Enter) {
+            mainMenuButtons[selectedButton].action();
+        }
     } while (kb_Data[6] != kb_Clear);
 
     quitProgram();
+
+    return 0;
 }
 
-void displayUserStats(const char *stats)
+void displayAccountInfo(const char *accountInfo)
 {
-    printf("userstats screen");
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET User Info", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET User Info")) / 2), 5);
+    gfx_PrintStringXY("TINET Account Info", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Account Info")) / 2), 5);
     gfx_SetTextFGColor(224);
     gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
-    char *statTokens[8];
-    char *token = strtok(stats, ";");
+    char *infoTokens[8];
+    char *token = strtok(accountInfo, ";");
     int i = 0;
     while (token != NULL && i < 8)
     {
-        statTokens[i++] = token;
+        infoTokens[i++] = token;
         token = strtok(NULL, ";");
     }
 
     int y = 65;
-    gfx_PrintStringXY("User Stats:", 1, y);
+    gfx_PrintStringXY("Account Info:", 1, y);
     y += 20;
     gfx_PrintStringXY("MB Used This Month: ", 1, y);
-    gfx_PrintString(statTokens[0]);
+    gfx_PrintString(infoTokens[0]);
     y += 15;
     gfx_PrintStringXY("MB Used Total: ", 1, y);
-    gfx_PrintString(statTokens[1]);
+    gfx_PrintString(infoTokens[1]);
     y += 15;
     gfx_PrintStringXY("Requests This Month: ", 1, y);
-    gfx_PrintString(statTokens[2]);
+    gfx_PrintString(infoTokens[2]);
     y += 15;
     gfx_PrintStringXY("Total Requests: ", 1, y);
-    gfx_PrintString(statTokens[3]);
+    gfx_PrintString(infoTokens[3]);
     y += 15;
     gfx_PrintStringXY("Plan: ", 1, y);
-    gfx_PrintString(statTokens[4]);
+    gfx_PrintString(infoTokens[4]);
     y += 15;
     gfx_PrintStringXY("Time Online (seconds): ", 1, y);
-    gfx_PrintString(statTokens[5]);
+    gfx_PrintString(infoTokens[5]);
     y += 15;
     gfx_PrintStringXY("Last Login (epoch time): ", 1, y);
-    gfx_PrintString(statTokens[6]);
+    gfx_PrintString(infoTokens[6]);
     y += 15;
     gfx_PrintStringXY("Profile Public: ", 1, y);
-    gfx_PrintString(statTokens[7]);
+    gfx_PrintString(infoTokens[7]);
 }
 
 void dashboardScreen()
@@ -313,8 +368,15 @@ void dashboardScreen()
     gfx_SetTextScale(1, 1);
     gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
     gfx_SetTextFGColor(255);
-    gfx_PrintStringXY("Logged in as ", 1, 45);
-    gfx_PrintStringXY(username, gfx_GetStringWidth("Logged in as "), 45);
+    
+    int centerX = (GFX_LCD_WIDTH - gfx_GetStringWidth("Logged in as ")) / 2;
+
+    gfx_PrintStringXY("Logged in as ", centerX - gfx_GetStringWidth("Logged in as "), 45);
+
+    gfx_PrintStringXY(username, centerX, 45);
+
+    int selectedButton = 0;
+    drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
 
     do
     {
@@ -325,76 +387,18 @@ void dashboardScreen()
             readSRL();
         }
 
-        if (has_unread_data)
-        {
-            has_unread_data = false;
-            if (startsWith(in_buffer, "accountInfo:"))
-            {
-                printf("Got accountInfo:");
-                displayUserStats(in_buffer + strlen("accountInfo:"));
-            }
+        if (kb_Data[7] == kb_Down) {
+            selectedButton = (selectedButton + 1) % numDashboardButtons;
+            drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
         }
-
-        // Handle other user input on the dashboard screen
-        // For example, check for button presses and react accordingly
-
-        if (kb_Data[5] == kb_Tan)
-        {
-            GPTScreen();
+        else if (kb_Data[7] == kb_Up) {
+            selectedButton = (selectedButton - 1 + numDashboardButtons) % numDashboardButtons;
+            drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
         }
-        if (kb_Data[4] == kb_Prgm)
-        {
-            printf("Chat");
+        else if (kb_Data[6] == kb_Enter) {
+            dashboardButtons[selectedButton].action();
         }
-        if (kb_Data[2] == kb_Recip)
-        {
-            printf("Drive");
-        }
-        if (kb_Data[2] == kb_Math)
-        {
-            char accountInfoBuff[12] = "accountInfo";
-            SendSerial(accountInfoBuff);
-        }
-
     } while (kb_Data[6] != kb_Clear);
-}
-
-
-void GPTScreen()
-{
-    gfx_ZeroScreen();
-    gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET GPT", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET GPT")) / 2), 0);
-    gfx_SetTextScale(1, 1);
-
-    char output_buffer[64] = {0};
-    strncpy(output_buffer, "GPT:", 4);
-
-    const char *chars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
-    uint8_t key, i = 0;
-    char buffer[64] = {0};
-
-    do
-    {
-        key = os_GetCSC();
-        if (chars[key])
-        {
-            buffer[i++] = chars[key];
-            printf("%c", chars[key]);
-        }
-    } while (key != sk_Enter);
-
-    // strncpy(output_buffer + 4, buffer, sizeof(output_buffer) - 4 - 1);
-    // output_buffer[sizeof(output_buffer) - 1] = '\0';
-
-    printf("\n%s", buffer);
-    printf("\n%i", sizeof(buffer));
-    // printf("\n%s", output_buffer);
-    SendSerial(buffer);
-    sleep(1000);
-
-    while (!os_GetCSC())
-        ;
 }
 
 void AccountScreen()
@@ -403,29 +407,15 @@ void AccountScreen()
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET Account", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Account")) / 2), 0);
     gfx_SetTextScale(1, 1);
-    do
-    {
+    char out_buff_msg[64] = "ACCOUNT_INFO";
+    SendSerial(out_buff_msg);
+    printf("Sent serial");
+    do {
         kb_Scan();
+    
     } while (kb_Data[6] != kb_Clear);
 
     return;
-}
-
-void GFXspritesInit()
-{
-    login_qrcode_sprite = gfx_MallocSprite(login_qr_width, login_qr_height);
-    usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
-    usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
-    connecting_sprite = gfx_MallocSprite(connecting_width, connecting_height);
-    bridge_connected_sprite = gfx_MallocSprite(bridge_connected_width, bridge_connected_height);
-    internet_connected_sprite = gfx_MallocSprite(internet_connected_width, internet_connected_height);
-
-    zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
-    zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
-    zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
-    zx0_Decompress(connecting_sprite, connecting_compressed);
-    zx0_Decompress(bridge_connected_sprite, bridge_connected_compressed);
-    zx0_Decompress(internet_connected_sprite, internet_connected_compressed);
 }
 
 void GFXsettings()
@@ -452,29 +442,29 @@ void NoKeyFileGFX()
 {
     gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
     gfx_PrintStringXY("https://tinet.tkbstudios.com/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/login")) / 2), 100);
-    // gfx_Sprite(login_qrcode_sprite, (GFX_LCD_WIDTH - login_qr_width) / 2, 112);
-}
-
-void SendSerial(char *message)
-{
-    srl_Write(&srl, message, strlen(message));
 }
 
 void login()
 {
-    char username_msg[64];
-    snprintf(username_msg, sizeof(username_msg), "USERNAME:%s", username);
-    SendSerial(username_msg);
+    const system_info_t *systemInfo = os_GetSystemInfo();
+    char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
+    for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
+        sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
+    }
+    char login_msg[85];
+    snprintf(login_msg, sizeof(login_msg), "LOGIN:%s:%s:%s", calcidStr, username, authkey);
+    SendSerial(login_msg);
 }
 
 void readSRL()
 {
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
 
+    
     if (bytes_read < 0)
     {
-        dbg_printf("error %d on srl_Read\n", bytes_read);
-        has_srl_device = false;
+        // has_srl_device = false;
+        printf("SRL 0B");
     }
     else if (bytes_read > 0)
     {
@@ -482,16 +472,14 @@ void readSRL()
         has_unread_data = true;
 
         /* BRIDGE CONNECTED GFX */
-        if (strcmp(in_buffer, "bridgeConnected") == 0)
-        {
+        if (strcmp(in_buffer, "bridgeConnected") == 0) {
             bridge_connected = true;
             gfx_SetColor(0x00);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
             gfx_SetColor(0x00);
             gfx_PrintStringXY("Bridge connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge connected!")) / 2), 80);
         }
-        if (strcmp(in_buffer, "bridgeDisconnected") == 0)
-        {
+        if (strcmp(in_buffer, "bridgeDisconnected") == 0) {
             bridge_connected = false;
             gfx_SetColor(0x00);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
@@ -500,16 +488,14 @@ void readSRL()
         }
 
         /* Internet Connected GFX */
-        if (strcmp(in_buffer, "SERIAL_CONNECTED_CONFIRMED_BY_SERVER") == 0)
-        {
+        if (strcmp(in_buffer, "SERIAL_CONNECTED_CONFIRMED_BY_SERVER") == 0) {
             internet_connected = true;
             gfx_SetColor(0x00);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
             gfx_SetColor(0x00);
             gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 110);
         }
-        if (strcmp(in_buffer, "internetDisconnected") == 0)
-        {
+        if (strcmp(in_buffer, "internetDisconnected") == 0) {
             internet_connected = false;
             gfx_SetColor(0x00);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
@@ -517,39 +503,34 @@ void readSRL()
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
         }
 
-        if (strcmp(in_buffer, "SEND_TOKEN") == 0)
-        {
-            char token_msg[64];
-            snprintf(token_msg, sizeof(token_msg), "TOKEN:%s", authkey);
-            SendSerial(token_msg);
-        }
-        if (strcmp(in_buffer, "LOGIN_SUCCESS") == 0)
-        {
-            dbg_printf("Logged in!");
+        if (strcmp(in_buffer, "LOGIN_SUCCESS") == 0) {
             dashboardScreen();
         }
 
-        if (strcmp(in_buffer, "MAIL_NOT_VERIFIED") == 0)
-        {
-            dbg_printf("Logged in!");
+        if (strcmp(in_buffer, "MAIL_NOT_VERIFIED") == 0) {
             printf("Mail not\nverified!");
         }
 
-        if (startsWith(in_buffer, "accountInfo:"))
-        {
-            printf("accountInfo recieved\n");
-            printf("%s", in_buffer);
+        if (strcmp(in_buffer, "ALREADY_CONNECTED") == 0) {
+            alreadyConnectedScreen();
         }
-    }
-}
 
-void FreeMemory()
-{
-    /* FREE MEMORY FROM SPRITES */
-    free(login_qrcode_sprite);
-    free(usb_connected_sprite);
-    free(usb_disconnected_sprite);
-    free(connecting_sprite);
+        if (strcmp(in_buffer, "USER_NOT_FOUND") == 0) {
+            userNotFoundScreen();
+        }
+
+        if (startsWith(in_buffer, "ACCOUNT_INFO:")) {
+            displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
+        }
+
+        if (startsWith(in_buffer, "YOUR_IP:")) {
+            displayIP(in_buffer + strlen("YOUR_IP:"));
+        }
+        if (startsWith(in_buffer, "CALC_ID_UPDATE_NEEDED")) {
+            calcIDneedsUpdateScreen();
+        }
+        has_unread_data = false;
+    }
 }
 
 void sendSerialInitData()
@@ -572,59 +553,90 @@ bool startsWith(const char *str, const char *prefix)
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
-/*
-void GFXspritesInit()
-{
-    login_qrcode_sprite = NULL;
-    usb_connected_sprite = NULL;
-    usb_disconnected_sprite = NULL;
-
-    LoadLoginQRCodeSprite();
-    LoadUSBConnectedSprite();
-    LoadUSBDIsconnectedSprite();
+void displayIP(const char *ipAddress) {
+    printf("Received IP address: %s\n", ipAddress);
 }
 
-void GFXspritesFree()
-{
-    // Free the memory from specific sprites
-    if (login_qrcode_sprite != NULL)
-    {
-        gfx_FreeSprite(login_qrcode_sprite);
-        login_qrcode_sprite = NULL;
-    }
-    if (usb_connected_sprite != NULL)
-    {
-        gfx_FreeSprite(usb_connected_sprite);
-        usb_connected_sprite = NULL;
-    }
-    if (usb_disconnected_sprite != NULL)
-    {
-        gfx_FreeSprite(usb_disconnected_sprite);
-        usb_disconnected_sprite = NULL;
-    }
+void howToUseScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("How To TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("How To TINET")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
+    gfx_SetTextFGColor(255);
+    gfx_SetTextScale(1, 1);
+
+    gfx_PrintStringXY("https://tinet.tkbstudios.com/", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/")) / 2, GFX_LCD_HEIGHT / 2);
+
+    do {
+        kb_Scan();
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
 }
 
-void LoadLoginQRCodeSprite()
-{
-    if (login_qrcode_sprite == NULL)
-    {
-        login_qrcode_sprite = gfx_MallocSprite(login_qr_width, login_qr_height);
-        zx0_Decompress(login_qrcode_sprite, login_qr_compressed);
-    }
+void alreadyConnectedScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("Already Connected", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Already Connected")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("you're already connected to TINET", (GFX_LCD_WIDTH - gfx_GetStringWidth("you're already connected to TINET")) / 2, 35);
+    gfx_SetTextFGColor(255);
+    gfx_PrintStringXY("Is it not you?", (GFX_LCD_WIDTH - gfx_GetStringWidth("Is it not you?")) / 2, 65);
+    gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("Reset your calc key", (GFX_LCD_WIDTH - gfx_GetStringWidth("Reset your calc key")) / 2, 65);
+    gfx_PrintStringXY("And log out from everywhere", (GFX_LCD_WIDTH - gfx_GetStringWidth("And log out from everywhere")) / 2, 80);
+    gfx_PrintStringXY("on https://tinet.tkbstudios.com/dashboard", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/dashboard")) / 2, GFX_LCD_HEIGHT / 2);
+    do {
+        kb_Scan();
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
 }
 
-void LoadUSBSprites()
-{
-    if (usb_connected_sprite == NULL)
-    {
-        usb_connected_sprite = gfx_MallocSprite(usb_connected_width, usb_connected_height);
-        zx0_Decompress(usb_connected_sprite, usb_connected_compressed);
-    }
-
-    if (usb_disconnected_sprite == NULL)
-    {
-        usb_disconnected_sprite = gfx_MallocSprite(usb_disconnected_width, usb_disconnected_height);
-        zx0_Decompress(usb_disconnected_sprite, usb_disconnected_compressed);
-    }
+void userNotFoundScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("TINET USER NOT FOUND", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET USER NOT FOUND")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("Your user doesn't exist", (GFX_LCD_WIDTH - gfx_GetStringWidth("Your user doesn't exist")) / 2, 35);
+    do {
+        kb_Scan();
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
 }
-*/
+
+void calcIDneedsUpdateScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("ID UPDATE", ((GFX_LCD_WIDTH - gfx_GetStringWidth("ID UPDATE")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("calc ID update", (GFX_LCD_WIDTH - gfx_GetStringWidth("calc ID update")) / 2, 35);
+    gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("update it on https://tinet.tkbstudios.com/dashboard", (GFX_LCD_WIDTH - gfx_GetStringWidth("update it on https://tinet.tkbstudios.com/dashboard")) / 2, 50);
+
+    const system_info_t *systemInfo = os_GetSystemInfo();
+    
+    if (systemInfo != NULL) {
+        gfx_PrintStringXY("calcid: ", 10 , 70);
+
+        char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
+        for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
+            sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
+        }
+        gfx_PrintStringXY(calcidStr, 10 + gfx_GetStringWidth("calcid: "), 70);
+    } else {
+        gfx_SetTextScale(2, 2);
+        gfx_PrintStringXY("Failed to get system info!", (GFX_LCD_WIDTH - gfx_GetStringWidth("Failed to get system info!")) / 2, GFX_LCD_HEIGHT / 2);
+    }
+    do {
+        kb_Scan();
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
+}
