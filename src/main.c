@@ -31,6 +31,8 @@
 #include <tice.h>
 #include <ti/info.h>
 
+const system_info_t *systemInfo;
+
 /* DEFINE USER */
 bool keyfile_available = false;
 char *username;
@@ -63,6 +65,7 @@ void howToUseScreen();
 void alreadyConnectedScreen();
 void userNotFoundScreen();
 void calcIDneedsUpdateScreen();
+void RTCChatScreen();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -75,6 +78,8 @@ srl_device_t srl;
 bool has_srl_device = false;
 uint8_t srl_buf[512];
 bool serial_init_data_sent = false;
+usb_error_t usb_error;
+const usb_standard_descriptors_t *usb_desc;
 
 bool key_pressed = false;
 uint8_t debounce_delay = 10;
@@ -107,11 +112,6 @@ void accountInfoButtonPressed() {
     AccountScreen();
 }
 
-void RTCChatButtonPressed() {
-    printf("Chat btn press\n");
-    msleep(500);
-}
-
 void BucketsButtonPressed() {
     printf("Buckets btn press\n");
     msleep(500);
@@ -119,7 +119,7 @@ void BucketsButtonPressed() {
 
 Button dashboardButtons[] = {
     {50, 60, 120, 30, "Account Info", accountInfoButtonPressed},
-    {50, 100, 120, 30, "RTC Chat", RTCChatButtonPressed},
+    {50, 100, 120, 30, "TINET Chat", RTCChatScreen},
     {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
 };
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
@@ -378,13 +378,16 @@ void dashboardScreen()
     int selectedButton = 0;
     drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
 
-    do
-    {
+    do {
         kb_Scan();
-
+        usb_HandleEvents();
         if (has_srl_device)
         {
             readSRL();
+        }
+        
+        if (kb_Data[6] == kb_Clear) {
+            break;
         }
 
         if (kb_Data[7] == kb_Down) {
@@ -412,10 +415,17 @@ void AccountScreen()
     printf("Sent serial");
     do {
         kb_Scan();
-    
-    } while (kb_Data[6] != kb_Clear);
 
-    return;
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+        
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
 }
 
 void GFXsettings()
@@ -446,7 +456,6 @@ void NoKeyFileGFX()
 
 void login()
 {
-    const system_info_t *systemInfo = os_GetSystemInfo();
     char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
     for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
         sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
@@ -460,7 +469,6 @@ void readSRL()
 {
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
 
-    
     if (bytes_read < 0)
     {
         // has_srl_device = false;
@@ -570,6 +578,13 @@ void howToUseScreen() {
 
     do {
         kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+        
         if (kb_Data[6] == kb_Clear) {
             break;
         }
@@ -604,6 +619,13 @@ void userNotFoundScreen() {
     gfx_PrintStringXY("Your user doesn't exist", (GFX_LCD_WIDTH - gfx_GetStringWidth("Your user doesn't exist")) / 2, 35);
     do {
         kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+        
         if (kb_Data[6] == kb_Clear) {
             break;
         }
@@ -618,8 +640,6 @@ void calcIDneedsUpdateScreen() {
     gfx_PrintStringXY("calc ID update", (GFX_LCD_WIDTH - gfx_GetStringWidth("calc ID update")) / 2, 35);
     gfx_SetTextScale(1, 1);
     gfx_PrintStringXY("update it on https://tinet.tkbstudios.com/dashboard", (GFX_LCD_WIDTH - gfx_GetStringWidth("update it on https://tinet.tkbstudios.com/dashboard")) / 2, 50);
-
-    const system_info_t *systemInfo = os_GetSystemInfo();
     
     if (systemInfo != NULL) {
         gfx_PrintStringXY("calcid: ", 10 , 70);
@@ -635,6 +655,62 @@ void calcIDneedsUpdateScreen() {
     }
     do {
         kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+        
+        if (kb_Data[6] == kb_Clear) {
+            break;
+        }
+    } while (1);
+}
+
+void RTCChatScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("TINET Chat", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Chat")) / 2), 5);
+    gfx_SetTextFGColor(224);
+    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
+    gfx_SetTextFGColor(255);
+    gfx_SetTextScale(1, 1);
+
+    const char *chars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
+    uint8_t key, i = 0;
+
+    msleep(500);
+
+    do {
+        kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+
+        char output_buffer[128] = {0};
+        strncpy(output_buffer, "RTC_CHAT:", 10);
+
+        char buffer[128] = {0};
+        do
+        {
+            key = os_GetCSC();
+            if (chars[key])
+            {
+                buffer[i++] = chars[key];
+                printf("%c", chars[key]);
+            }
+        } while (key != sk_Enter);
+
+        printf("\n%s", buffer);
+        printf("\n%i", sizeof(buffer));
+        printf("\n%s", output_buffer);
+        SendSerial(output_buffer);
+        msleep(1000);
+
         if (kb_Data[6] == kb_Clear) {
             break;
         }
