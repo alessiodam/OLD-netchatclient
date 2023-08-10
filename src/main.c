@@ -65,6 +65,7 @@ void alreadyConnectedScreen();
 void userNotFoundScreen();
 void calcIDneedsUpdateScreen();
 void RTCChatScreen();
+void accountInfoScreen(const char *accountInfo);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -111,7 +112,17 @@ void accountInfoButtonPressed() {
     msleep(200);
     char out_buff_msg[14] = "ACCOUNT_INFO";
     SendSerial(out_buff_msg);
-    printf("sent srl");
+    printf("sent srl\n");
+    size_t bytes_read;
+
+    do {
+        bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
+        if (bytes_read > 0) {
+            break;
+        }
+    } while (1);
+
+    accountInfoScreen(in_buffer);
 }
 
 void BucketsButtonPressed() {
