@@ -794,8 +794,6 @@ void TINETChatScreen()
     int boxY = 200;
     int textX = 20;
 
-    gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
-
     inside_RTC_chat = true;
     bool need_to_send = true;
     bool uppercase = false;
@@ -804,7 +802,7 @@ void TINETChatScreen()
 
     while (key != sk_Clear)
     {
-        char buffer[64] = {0};
+        char buffer[128] = {0};
         i = 0;
 
         usb_HandleEvents();
@@ -814,11 +812,9 @@ void TINETChatScreen()
             readSRL();
         }
 
-        gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
+        gfx_FillRectangle(15, boxY, 290, 30);
 
-        char output_buffer[73] = "RTC_CHAT:";
-
-        gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
+        char output_buffer[137] = "RTC_CHAT:";
 
         do
         {
@@ -854,7 +850,7 @@ void TINETChatScreen()
                 char removedChar = buffer[i];
                 textX -= gfx_GetStringWidth(&removedChar) * 2;
                 buffer[i] = '\0';
-                gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
+                gfx_FillRectangle(15, boxY, GFX_LCD_WIDTH - 15, 30);
                 gfx_SetTextScale(2, 2);
                 gfx_PrintStringXY(buffer, textX, boxY + 5);
                 gfx_SetTextScale(1, 1);
@@ -891,7 +887,7 @@ void TINETChatScreen()
 
             SendSerial(output_buffer);
             msleep(100);
-            gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 40);
+            gfx_FillRectangle(15, boxY, GFX_LCD_WIDTH - 15, 30);
             textX = 20;
             need_to_send = false;
         }
