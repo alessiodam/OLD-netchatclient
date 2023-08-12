@@ -787,28 +787,12 @@ void TINETChatScreen() {
 
 void displayMessages() {
     gfx_SetTextScale(1, 1);
-    size_t yOffset = 60;
-    int messageWidth = GFX_LCD_WIDTH - 40;
-
+    int yOffset = 60;
     for (int i = 0; i < messageCount; i++) {
-        char messageWithTimestamp[64];
-        char timestamp[20];
-
-        snprintf(messageWithTimestamp, sizeof(messageWithTimestamp), "%s: %s", timestamp, messageList[i].message);
-
-        size_t lineStart = 0;
-        while (lineStart < strlen(messageWithTimestamp)) {
-            char lineBuffer[64];
-            strncpy(lineBuffer, messageWithTimestamp + lineStart, messageWidth);
-            lineBuffer[messageWidth] = '\0';
-            gfx_PrintStringXY(lineBuffer, 20, yOffset);
-            yOffset += 15;
-            lineStart += messageWidth;
-        }
+        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
+        yOffset += 10;
     }
 }
-
-
 
 void addMessage(const char *message, int posY) {
     if (messageCount >= MAX_MESSAGES) {
@@ -824,29 +808,4 @@ void addMessage(const char *message, int posY) {
     newMessage.posY = posY;
     messageList[messageCount] = newMessage;
     messageCount++;
-}
-
-void printWrappedText(const char *text, int x, int y) {
-    int len = strlen(text);
-    int startIndex = 0;
-
-    while (startIndex < len) {
-        int endIndex = startIndex + MAX_LINE_LENGTH;
-        if (endIndex > len) {
-            endIndex = len;
-        }
-
-        while (endIndex > startIndex && text[endIndex] != ' ') {
-            endIndex--;
-        }
-
-        char wrappedLine[MAX_LINE_LENGTH + 1];
-        strncpy(wrappedLine, &text[startIndex], endIndex - startIndex);
-        wrappedLine[endIndex - startIndex] = '\0';
-
-        gfx_PrintStringXY(wrappedLine, x, y);
-
-        startIndex = endIndex + 1;
-        y += 10;
-    }
 }
