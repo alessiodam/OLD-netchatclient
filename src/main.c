@@ -64,7 +64,7 @@ void howToUseScreen();
 void alreadyConnectedScreen();
 void userNotFoundScreen();
 void calcIDneedsUpdateScreen();
-void RTCChatScreen();
+void TINETChatScreen();
 void accountInfoScreen(const char *accountInfo);
 
 /* DEFINE CONNECTION VARS */
@@ -132,7 +132,7 @@ void BucketsButtonPressed() {
 
 Button dashboardButtons[] = {
     {50, 60, 120, 30, "Account Info", accountInfoButtonPressed},
-    {50, 100, 120, 30, "TINET Chat", RTCChatScreen},
+    {50, 100, 120, 30, "TINET Chat", TINETChatScreen},
     {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
 };
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
@@ -667,7 +667,7 @@ void calcIDneedsUpdateScreen() {
     } while (1);
 }
 
-void RTCChatScreen() {
+void TINETChatScreen() {
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET Chat", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Chat")) / 2), 5);
@@ -678,35 +678,30 @@ void RTCChatScreen() {
 
     const char *chars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
     uint8_t key, i = 0;
+    key = os_GetCSC();
 
-    msleep(500);
-
-    do {
-        kb_Scan();
+    while (key != sk_Clear) {
+        char buffer[64] = {0};
+        i = 0;
 
         usb_HandleEvents();
-        if (has_srl_device)
-        {
+        if (has_srl_device) {
             readSRL();
         }
 
-        char output_buffer[64] = {0};
-        strncpy(output_buffer, "RTC_CHAT:", 10);
+        char output_buffer[64] = "RTC_CHAT:";
 
-        char buffer[64] = {0};
-        do
-        {
+        do {
             key = os_GetCSC();
-            if (chars[key])
-            {
+            if (chars[key]) {
                 buffer[i++] = chars[key];
                 printf("%c", chars[key]);
             }
         } while (key != sk_Enter);
 
-        printf("\n%s", buffer);
-        printf("\n%i", sizeof(buffer));
+        strcat(output_buffer, buffer);
+
         SendSerial(output_buffer);
-        msleep(250);
-    } while (kb_Data[6] != kb_Clear);
+        msleep(100);
+    }
 }
