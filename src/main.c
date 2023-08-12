@@ -555,11 +555,14 @@ void readSRL()
         }
 
         if (startsWith(in_buffer, "RTC_CHAT:")) {
-            // Extract message content (format is "RTC_CHAT:timestamp:username:message")
             char *messageContent = strstr(in_buffer, ":");
             if (messageContent) {
-                messageContent++; // Move past the ':'
-                addMessage(messageContent, 200 + messageCount * 15);
+                messageContent = strstr(messageContent + 1, ":");
+                if (messageContent) {
+                    messageContent++;
+                    addMessage(messageContent, 200 + messageCount * 15);
+                    displayMessages();
+                }
             }
         }
 
@@ -707,27 +710,33 @@ void TINETChatScreen() {
     uint8_t key, i = 0;
     key = os_GetCSC();
 
-    int boxY = 160;
+    int boxY = 200;
     int textX = 20;
+    int textBoxY = 250;
 
-    gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 80);
+    gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
 
     msleep(300);
-    
+
     inside_RTC_chat = true;
-    
+
     while (key != sk_Clear) {
         char buffer[64] = {0};
         i = 0;
 
         usb_HandleEvents();
+
         if (has_srl_device) {
             readSRL();
+            displayMessages();
         }
 
-        gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 80);
+        gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
 
         char output_buffer[64] = "RTC_CHAT:";
+
+        gfx_Rectangle(10, textBoxY, GFX_LCD_WIDTH - 20, 30);
+        gfx_FillRectangle(12, textBoxY + 2, GFX_LCD_WIDTH - 24, 26);
 
         do {
             key = os_GetCSC();
@@ -738,7 +747,11 @@ void TINETChatScreen() {
                 gfx_SetTextScale(1, 1);
                 textX += gfx_GetStringWidth(typedChar) * 2;
                 buffer[i++] = chars[key];
-                printf("%c", chars[key]);
+            }
+            usb_HandleEvents();
+            if (has_srl_device) {
+                readSRL();
+                displayMessages();
             }
         } while (key != sk_Enter);
 
@@ -749,16 +762,16 @@ void TINETChatScreen() {
         gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 40);
         textX = 20;
     }
-    
+
     inside_RTC_chat = false;
 }
 
 void displayMessages() {
     gfx_SetTextScale(1, 1);
-    int yOffset = 200;
+    int yOffset = 60;
     for (int i = 0; i < messageCount; i++) {
-        gfx_PrintStringXY(messageList[i].message, (GFX_LCD_WIDTH - gfx_GetStringWidth(messageList[i].message)) / 2, messageList[i].posY);
-        yOffset += 15;
+        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
+        yOffset += 10;
     }
 }
 
