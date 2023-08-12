@@ -213,10 +213,10 @@ typedef struct
 /* DEFINE UI */
 #define TITLE_X_POS 10
 #define TITLE_Y_POS 10
-#define CASE_BOX_X_POS 150
-#define CASE_BOX_Y_POS 10
-#define CASE_BOX_WIDTH 85
-#define CASE_BOX_HEIGHT 25
+#define CASE_BOX_X_POS 10
+#define CASE_BOX_Y_POS 20
+#define CASE_BOX_WIDTH 80
+#define CASE_BOX_HEIGHT 15
 
 usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
 {
@@ -550,17 +550,17 @@ void readSRL()
         if (strcmp(in_buffer, "bridgeConnected") == 0)
         {
             bridge_connected = true;
-            gfx_SetColor(0x00);
+            gfx_SetColor(0);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
-            gfx_SetColor(0x00);
+            gfx_SetColor(0);
             gfx_PrintStringXY("Bridge connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge connected!")) / 2), 80);
         }
         if (strcmp(in_buffer, "bridgeDisconnected") == 0)
         {
             bridge_connected = false;
-            gfx_SetColor(0x00);
+            gfx_SetColor(0);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
-            gfx_SetColor(0x00);
+            gfx_SetColor(0);
             gfx_PrintStringXY("Bridge disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80);
         }
 
@@ -568,17 +568,17 @@ void readSRL()
         if (strcmp(in_buffer, "SERIAL_CONNECTED_CONFIRMED_BY_SERVER") == 0)
         {
             internet_connected = true;
-            gfx_SetColor(0x00);
+            gfx_SetColor(0);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
-            gfx_SetColor(0x00);
+            gfx_SetColor(0);
             gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 110);
         }
         if (strcmp(in_buffer, "internetDisconnected") == 0)
         {
             internet_connected = false;
-            gfx_SetColor(0x00);
+            gfx_SetColor(0);
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
-            gfx_SetColor(0x00);
+            gfx_SetColor(0);
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
         }
 
@@ -812,6 +812,7 @@ void TINETChatScreen()
             readSRL();
         }
 
+        gfx_SetColor(7);
         gfx_FillRectangle(15, boxY, 290, 30);
 
         char output_buffer[137] = "RTC_CHAT:";
@@ -850,7 +851,8 @@ void TINETChatScreen()
                 char removedChar = buffer[i];
                 textX -= gfx_GetStringWidth(&removedChar) * 2;
                 buffer[i] = '\0';
-                gfx_FillRectangle(15, boxY, GFX_LCD_WIDTH - 15, 30);
+                gfx_SetColor(7);
+                gfx_FillRectangle(15, boxY, 290, 30);
                 gfx_SetTextScale(2, 2);
                 gfx_PrintStringXY(buffer, textX, boxY + 5);
                 gfx_SetTextScale(1, 1);
@@ -887,7 +889,8 @@ void TINETChatScreen()
 
             SendSerial(output_buffer);
             msleep(100);
-            gfx_FillRectangle(15, boxY, GFX_LCD_WIDTH - 15, 30);
+            gfx_SetColor(7);
+            gfx_FillRectangle(15, boxY, 290, 30);
             textX = 20;
             need_to_send = false;
         }
@@ -929,6 +932,7 @@ void addMessage(const char *message, int posY)
 void updateCaseBox(bool isUppercase)
 {
     char *boxText = isUppercase ? "UPPERCASE" : "lowercase";
+    gfx_SetColor(18);
     gfx_FillRectangle(CASE_BOX_X_POS, CASE_BOX_Y_POS, CASE_BOX_WIDTH, CASE_BOX_HEIGHT);
-    gfx_PrintStringXY(boxText, CASE_BOX_X_POS + 10, CASE_BOX_Y_POS + 10);
+    gfx_PrintStringXY(boxText, CASE_BOX_X_POS + 5, CASE_BOX_Y_POS + 5);
 }
