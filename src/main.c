@@ -72,6 +72,7 @@ void userNotFoundScreen();
 void calcIDneedsUpdateScreen();
 void TINETChatScreen();
 void accountInfoScreen(const char *accountInfo);
+void updateCaseBox(bool isUppercase);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -372,7 +373,7 @@ void accountInfoScreen(const char *accountInfo)
     gfx_SetTextScale(1, 1);
 
     char *infoTokens[8];
-    char *token = strtok(accountInfo, ";");
+    char *token = strtok((char *)accountInfo, ";");
     int i = 0;
     while (token != NULL && i < 8)
     {
@@ -725,19 +726,19 @@ void TINETChatScreen() {
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
-    const char *chars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
+    const char *uppercasechars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
+    const char *lowercasechars = "\0\0\0\0\0\0\0\0\0\0\"wrmh\0\0?[vqlg\0\0:zupkfc\0 ytojeb\0\0xsnida\0\0\0\0\0\0\0\0";
     uint8_t key, i = 0;
     key = os_GetCSC();
 
     int boxY = 200;
     int textX = 20;
-    int textBoxY = 250;
 
     gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
 
-    msleep(300);
-
     inside_RTC_chat = true;
+    bool need_to_send = true;
+    bool uppercase = false;
 
     while (key != sk_Clear) {
         char buffer[64] = {0};
@@ -752,60 +753,109 @@ void TINETChatScreen() {
 
         gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
 
-        char output_buffer[64] = "RTC_CHAT:";
+        char output_buffer[73] = "RTC_CHAT:";
 
-        gfx_Rectangle(10, textBoxY, GFX_LCD_WIDTH - 20, 30);
-        gfx_FillRectangle(12, textBoxY + 2, GFX_LCD_WIDTH - 24, 26);
+        gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
 
         do {
             key = os_GetCSC();
-            if (chars[key]) {
-                char typedChar[2] = {chars[key], '\0'};
-                gfx_SetTextScale(2, 2);
-                gfx_PrintStringXY(typedChar, textX, boxY + 5);
-                gfx_SetTextScale(1, 1);
-                textX += gfx_GetStringWidth(typedChar) * 2;
-                buffer[i++] = chars[key];
+            if (uppercase) {
+                if (uppercasechars[key]) {
+                    char typedChar[2] = {uppercasechars[key], '\0'};
+                    gfx_SetTextScale(2, 2);
+                    gfx_PrintStringXY(typedChar, textX, boxY + 5);
+                    gfx_SetTextScale(1, 1);
+                    textX += gfx_GetStringWidth(typedChar) * 2;
+                    buffer[i++] = uppercasechars[key];
+                }
+            } else {
+                if (lowercasechars[key]) {
+                    char typedChar[2] = {lowercasechars[key], '\0'};
+                    gfx_SetTextScale(2, 2);
+                    gfx_PrintStringXY(typedChar, textX, boxY + 5);
+                    gfx_SetTextScale(1, 1);
+                    textX += gfx_GetStringWidth(typedChar) * 2;
+                    buffer[i++] = lowercasechars[key];
+                }
             }
+
+            if (key == sk_Del && i > 0) {
+                i--;
+                char removedChar = buffer[i];
+                textX -= gfx_GetStringWidth(&removedChar) * 2;
+                buffer[i] = '\0';
+                gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
+                displayMessages();
+                gfx_SetTextScale(2, 2);
+                gfx_PrintStringXY(buffer, textX, boxY + 5);
+                gfx_SetTextScale(1, 1);
+            }
+
             usb_HandleEvents();
             if (has_srl_device) {
                 readSRL();
                 displayMessages();
             }
-        } while (key != sk_Enter);
+            if (key == sk_Clear) {
+                break;
+            }
+            if (key == sk_Enter) {
+                need_to_send = true;
+                break;
+            }
+            if (key == sk_Alpha) {
+                uppercase = !uppercase;
+            }
+        } while (1);
 
-        strcat(output_buffer, buffer);
+        if (strcmp(buffer, "") != 0 && need_to_send == true) {
+            strcat(output_buffer, buffer);
 
-        SendSerial(output_buffer);
-        msleep(100);
-        gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 40);
-        textX = 20;
+            SendSerial(output_buffer);
+            msleep(100);
+            gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 40);
+            textX = 20;
+            need_to_send = false;
+        }
     }
 
     inside_RTC_chat = false;
 }
 
 void displayMessages() {
-    gfx_SetTextScale(1, 1);
-    int yOffset = 60;
-    for (int i = 0; i < messageCount; i++) {
-        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
-        yOffset += 10;
+    if (inside_RTC_chat) {
+        gfx_SetTextScale(1, 1);
+        int yOffset = 60;
+        for (int i = 0; i < messageCount; i++) {
+            gfx_PrintStringXY(messageList[i].message, 20, yOffset);
+            yOffset += 10;
+        }
     }
 }
 
 void addMessage(const char *message, int posY) {
-    if (messageCount >= MAX_MESSAGES) {
-        for (int i = 0; i < messageCount - 1; i++) {
-            strcpy(messageList[i].message, messageList[i + 1].message);
-            messageList[i].posY = messageList[i + 1].posY;
+    if (inside_RTC_chat) {
+        if (messageCount >= MAX_MESSAGES) {
+            for (int i = 0; i < messageCount - 1; i++) {
+                strcpy(messageList[i].message, messageList[i + 1].message);
+                messageList[i].posY = messageList[i + 1].posY;
+            }
+            messageCount--;
         }
-        messageCount--;
-    }
 
-    ChatMessage newMessage;
-    strcpy(newMessage.message, message);
-    newMessage.posY = posY;
-    messageList[messageCount] = newMessage;
-    messageCount++;
+        ChatMessage newMessage;
+        strcpy(newMessage.message, message);
+        newMessage.posY = posY;
+        messageList[messageCount] = newMessage;
+        messageCount++;
+    }
+}
+
+void updateCaseBox(bool isUppercase) {
+    char *boxText = isUppercase ? "UPPERCASE" : "lowercase";
+    // Assuming gfx_FillRectangle and gfx_PrintStringXY are already defined for the system
+    // Clearing an area for the box
+    gfx_FillRectangle(BOX_X_POS, BOX_Y_POS, BOX_WIDTH, BOX_HEIGHT);
+    // Drawing the text
+    gfx_PrintStringXY(boxText, BOX_X_POS + 10, BOX_Y_POS + 10);
 }
