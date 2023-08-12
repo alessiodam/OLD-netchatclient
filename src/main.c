@@ -30,6 +30,14 @@
 #include <stdbool.h>
 #include <tice.h>
 #include <ti/info.h>
+#include <stdint.h>
+
+#define MAX_MESSAGES 10
+#define MAX_LINE_LENGTH (GFX_LCD_WIDTH - 40)
+
+const system_info_t *systemInfo;
+
+bool inside_RTC_chat = false;
 
 /* DEFINE USER */
 bool keyfile_available = false;
@@ -55,7 +63,6 @@ void sendSerialInitData();
 void getCurrentTime();
 void printServerPing();
 void dashboardScreen();
-void AccountScreen();
 void mailNotVerifiedScreen();
 bool startsWith(const char *str, const char *prefix);
 void displayIP(const char *ipAddress);
@@ -63,6 +70,9 @@ void howToUseScreen();
 void alreadyConnectedScreen();
 void userNotFoundScreen();
 void calcIDneedsUpdateScreen();
+void TINETChatScreen();
+void accountInfoScreen(const char *accountInfo);
+void updateCaseBox(bool isUppercase);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -75,6 +85,8 @@ srl_device_t srl;
 bool has_srl_device = false;
 uint8_t srl_buf[512];
 bool serial_init_data_sent = false;
+usb_error_t usb_error;
+const usb_standard_descriptors_t *usb_desc;
 
 bool key_pressed = false;
 uint8_t debounce_delay = 10;
@@ -104,12 +116,20 @@ typedef struct {
 } Button;
 
 void accountInfoButtonPressed() {
-    AccountScreen();
-}
+    msleep(200);
+    char out_buff_msg[14] = "ACCOUNT_INFO";
+    SendSerial(out_buff_msg);
+    printf("sent srl\n");
+    size_t bytes_read;
 
-void RTCChatButtonPressed() {
-    printf("Chat btn press\n");
-    msleep(500);
+    do {
+        bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
+        if (bytes_read > 0) {
+            break;
+        }
+    } while (1);
+
+    accountInfoScreen(in_buffer);
 }
 
 void BucketsButtonPressed() {
@@ -119,7 +139,7 @@ void BucketsButtonPressed() {
 
 Button dashboardButtons[] = {
     {50, 60, 120, 30, "Account Info", accountInfoButtonPressed},
-    {50, 100, 120, 30, "RTC Chat", RTCChatButtonPressed},
+    {50, 100, 120, 30, "TINET Chat", TINETChatScreen},
     {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
 };
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
@@ -143,7 +163,7 @@ int numMainMenuButtons = sizeof(mainMenuButtons) / sizeof(mainMenuButtons[0]);
 void drawButtons(Button *buttons, int numButtons, int selectedButton) {
     for (int i = 0; i < numButtons; i++) {
         if (i == selectedButton) {
-            gfx_SetColor(255);
+            gfx_SetColor(7);
         } else {
             gfx_SetColor(224);
         }
@@ -152,6 +172,38 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton) {
     }
     msleep(250);
 }
+
+/* DEFINE CHAT */
+void printWrappedText(const char *text, int x, int y);
+void displayMessages();
+void addMessage(const char *message, int posY);
+
+typedef struct {
+    char message[64];
+    int posY;
+} ChatMessage;
+
+ChatMessage messageList[MAX_MESSAGES];
+int messageCount = 0;
+
+/* DEFINE DATETIME */
+typedef struct {
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+} DateTime;
+
+/* DEFINE UI */
+#define TITLE_X_POS 10
+#define TITLE_Y_POS 10
+#define CASE_BOX_X_POS 150
+#define CASE_BOX_Y_POS 10
+#define CASE_BOX_WIDTH 85
+#define CASE_BOX_HEIGHT 25
+
 
 usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
 {
@@ -312,7 +364,7 @@ int main(void) {
     return 0;
 }
 
-void displayAccountInfo(const char *accountInfo)
+void accountInfoScreen(const char *accountInfo)
 {
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
@@ -323,7 +375,7 @@ void displayAccountInfo(const char *accountInfo)
     gfx_SetTextScale(1, 1);
 
     char *infoTokens[8];
-    char *token = strtok(accountInfo, ";");
+    char *token = strtok((char *)accountInfo, ";");
     int i = 0;
     while (token != NULL && i < 8)
     {
@@ -357,6 +409,15 @@ void displayAccountInfo(const char *accountInfo)
     y += 15;
     gfx_PrintStringXY("Profile Public: ", 1, y);
     gfx_PrintString(infoTokens[7]);
+    do {
+        kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+    } while (kb_Data[6] != kb_Clear);
 }
 
 void dashboardScreen()
@@ -378,13 +439,16 @@ void dashboardScreen()
     int selectedButton = 0;
     drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
 
-    do
-    {
+    do {
         kb_Scan();
-
+        usb_HandleEvents();
         if (has_srl_device)
         {
             readSRL();
+        }
+        
+        if (kb_Data[6] == kb_Clear) {
+            break;
         }
 
         if (kb_Data[7] == kb_Down) {
@@ -399,23 +463,6 @@ void dashboardScreen()
             dashboardButtons[selectedButton].action();
         }
     } while (kb_Data[6] != kb_Clear);
-}
-
-void AccountScreen()
-{
-    gfx_ZeroScreen();
-    gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET Account", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Account")) / 2), 0);
-    gfx_SetTextScale(1, 1);
-    char out_buff_msg[64] = "ACCOUNT_INFO";
-    SendSerial(out_buff_msg);
-    printf("Sent serial");
-    do {
-        kb_Scan();
-    
-    } while (kb_Data[6] != kb_Clear);
-
-    return;
 }
 
 void GFXsettings()
@@ -446,12 +493,11 @@ void NoKeyFileGFX()
 
 void login()
 {
-    const system_info_t *systemInfo = os_GetSystemInfo();
     char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
     for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
         sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
     }
-    char login_msg[85];
+    char login_msg[93];
     snprintf(login_msg, sizeof(login_msg), "LOGIN:%s:%s:%s", calcidStr, username, authkey);
     SendSerial(login_msg);
 }
@@ -460,7 +506,6 @@ void readSRL()
 {
     size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
 
-    
     if (bytes_read < 0)
     {
         // has_srl_device = false;
@@ -520,7 +565,8 @@ void readSRL()
         }
 
         if (startsWith(in_buffer, "ACCOUNT_INFO:")) {
-            displayAccountInfo(in_buffer + strlen("ACCOUNT_INFO:"));
+            printf("got acc inf");
+            accountInfoScreen(in_buffer + strlen("ACCOUNT_INFO:"));
         }
 
         if (startsWith(in_buffer, "YOUR_IP:")) {
@@ -529,6 +575,19 @@ void readSRL()
         if (startsWith(in_buffer, "CALC_ID_UPDATE_NEEDED")) {
             calcIDneedsUpdateScreen();
         }
+
+        if (startsWith(in_buffer, "RTC_CHAT:")) {
+            char *messageContent = strstr(in_buffer, ":");
+            if (messageContent) {
+                messageContent = strstr(messageContent + 1, ":");
+                if (messageContent) {
+                    messageContent++;
+                    addMessage(messageContent, 200 + messageCount * 15);
+                    displayMessages();
+                }
+            }
+        }
+
         has_unread_data = false;
     }
 }
@@ -570,6 +629,13 @@ void howToUseScreen() {
 
     do {
         kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+        
         if (kb_Data[6] == kb_Clear) {
             break;
         }
@@ -604,6 +670,13 @@ void userNotFoundScreen() {
     gfx_PrintStringXY("Your user doesn't exist", (GFX_LCD_WIDTH - gfx_GetStringWidth("Your user doesn't exist")) / 2, 35);
     do {
         kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+        
         if (kb_Data[6] == kb_Clear) {
             break;
         }
@@ -618,8 +691,6 @@ void calcIDneedsUpdateScreen() {
     gfx_PrintStringXY("calc ID update", (GFX_LCD_WIDTH - gfx_GetStringWidth("calc ID update")) / 2, 35);
     gfx_SetTextScale(1, 1);
     gfx_PrintStringXY("update it on https://tinet.tkbstudios.com/dashboard", (GFX_LCD_WIDTH - gfx_GetStringWidth("update it on https://tinet.tkbstudios.com/dashboard")) / 2, 50);
-
-    const system_info_t *systemInfo = os_GetSystemInfo();
     
     if (systemInfo != NULL) {
         gfx_PrintStringXY("calcid: ", 10 , 70);
@@ -635,8 +706,147 @@ void calcIDneedsUpdateScreen() {
     }
     do {
         kb_Scan();
+
+        usb_HandleEvents();
+        if (has_srl_device)
+        {
+            readSRL();
+        }
+        
         if (kb_Data[6] == kb_Clear) {
             break;
         }
     } while (1);
+}
+
+void TINETChatScreen() {
+    gfx_ZeroScreen();
+    gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("TINET Chat", TITLE_X_POS, TITLE_Y_POS);
+
+    const char *uppercasechars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
+    const char *lowercasechars = "\0\0\0\0\0\0\0\0\0\0\"wrmh\0\0?[vqlg\0\0:zupkfc\0 ytojeb\0\0xsnida\0\0\0\0\0\0\0\0";
+    uint8_t key, i = 0;
+    key = os_GetCSC();
+
+    int boxY = 200;
+    int textX = 20;
+
+    gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
+
+    inside_RTC_chat = true;
+    bool need_to_send = true;
+    bool uppercase = false;
+
+    updateCaseBox(uppercase);
+
+    while (key != sk_Clear) {
+        char buffer[64] = {0};
+        i = 0;
+
+        usb_HandleEvents();
+
+        if (has_srl_device) {
+            readSRL();
+        }
+
+        gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
+
+        char output_buffer[73] = "RTC_CHAT:";
+
+        gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
+
+        do {
+            key = os_GetCSC();
+            if (uppercase) {
+                if (uppercasechars[key]) {
+                    char typedChar[2] = {uppercasechars[key], '\0'};
+                    gfx_SetTextScale(2, 2);
+                    gfx_PrintStringXY(typedChar, textX, boxY + 5);
+                    gfx_SetTextScale(1, 1);
+                    textX += gfx_GetStringWidth(typedChar) * 2;
+                    buffer[i++] = uppercasechars[key];
+                }
+            } else {
+                if (lowercasechars[key]) {
+                    char typedChar[2] = {lowercasechars[key], '\0'};
+                    gfx_SetTextScale(2, 2);
+                    gfx_PrintStringXY(typedChar, textX, boxY + 5);
+                    gfx_SetTextScale(1, 1);
+                    textX += gfx_GetStringWidth(typedChar) * 2;
+                    buffer[i++] = lowercasechars[key];
+                }
+            }
+
+            if (key == sk_Del && i > 0) {
+                i--;
+                char removedChar = buffer[i];
+                textX -= gfx_GetStringWidth(&removedChar) * 2;
+                buffer[i] = '\0';
+                gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
+                gfx_SetTextScale(2, 2);
+                gfx_PrintStringXY(buffer, textX, boxY + 5);
+                gfx_SetTextScale(1, 1);
+            }
+
+            usb_HandleEvents();
+            if (has_srl_device) {
+                readSRL();
+            }
+            if (key == sk_Clear) {
+                break;
+            }
+            if (key == sk_Enter) {
+                need_to_send = true;
+                break;
+            }
+            if (key == sk_Alpha) {
+                uppercase = !uppercase;
+                updateCaseBox(uppercase);
+            }
+        } while (1);
+
+        if (strcmp(buffer, "") != 0 && need_to_send == true) {
+            strcat(output_buffer, buffer);
+
+            SendSerial(output_buffer);
+            msleep(100);
+            gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 40);
+            textX = 20;
+            need_to_send = false;
+        }
+    }
+
+    inside_RTC_chat = false;
+}
+
+void displayMessages() {
+    gfx_SetTextScale(1, 1);
+    int yOffset = 60;
+    for (int i = 0; i < messageCount; i++) {
+        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
+        yOffset += 10;
+    }
+}
+
+void addMessage(const char *message, int posY) {
+    if (messageCount >= MAX_MESSAGES) {
+        for (int i = 0; i < messageCount - 1; i++) {
+            strcpy(messageList[i].message, messageList[i + 1].message);
+            messageList[i].posY = messageList[i + 1].posY;
+        }
+        messageCount--;
+    }
+
+    ChatMessage newMessage;
+    strcpy(newMessage.message, message);
+    newMessage.posY = posY;
+    messageList[messageCount] = newMessage;
+    messageCount++;
+}
+
+void updateCaseBox(bool isUppercase) {
+    char *boxText = isUppercase ? "UPPERCASE" : "lowercase";
+    gfx_FillRectangle(CASE_BOX_X_POS, CASE_BOX_Y_POS, CASE_BOX_WIDTH, CASE_BOX_HEIGHT);
+    gfx_PrintStringXY(boxText, CASE_BOX_X_POS + 10, CASE_BOX_Y_POS + 10);
 }
