@@ -825,7 +825,7 @@ void TINETChatScreen() {
 void displayMessages() {
     if (inside_RTC_chat) {
         gfx_SetTextScale(1, 1);
-        int yOffset = 60;
+
         for (int i = 0; i < messageCount; i++) {
             gfx_PrintStringXY(messageList[i].message, 20, yOffset);
             yOffset += 10;
