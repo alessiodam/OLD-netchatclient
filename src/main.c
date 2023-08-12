@@ -464,7 +464,7 @@ void dashboardScreen()
         else if (kb_Data[6] == kb_Enter) {
             dashboardButtons[selectedButton].action();
         }
-    } while (kb_Data[6] != kb_Clear);
+    } while (1);
 }
 
 void GFXsettings()
