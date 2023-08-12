@@ -117,9 +117,10 @@ typedef struct {
 
 void accountInfoButtonPressed() {
     msleep(200);
+    printf("in dev\n");
+    /*
     char out_buff_msg[14] = "ACCOUNT_INFO";
     SendSerial(out_buff_msg);
-    printf("sent srl\n");
     size_t bytes_read;
 
     do {
@@ -130,6 +131,7 @@ void accountInfoButtonPressed() {
     } while (1);
 
     accountInfoScreen(in_buffer);
+    */
 }
 
 void BucketsButtonPressed() {
