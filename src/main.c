@@ -494,7 +494,7 @@ void login()
     for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++) {
         sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
     }
-    char login_msg[89];
+    char login_msg[93];
     snprintf(login_msg, sizeof(login_msg), "LOGIN:%s:%s:%s", calcidStr, username, authkey);
     SendSerial(login_msg);
 }
