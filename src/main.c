@@ -30,8 +30,10 @@
 #include <stdbool.h>
 #include <tice.h>
 #include <ti/info.h>
+#include <stdint.h>
 
 #define MAX_MESSAGES 10
+#define MAX_LINE_LENGTH (GFX_LCD_WIDTH - 40)
 
 const system_info_t *systemInfo;
 
@@ -171,6 +173,7 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton) {
 }
 
 /* DEFINE CHAT */
+void printWrappedText(const char *text, int x, int y);
 void displayMessages();
 void addMessage(const char *message, int posY);
 
@@ -181,6 +184,22 @@ typedef struct {
 
 ChatMessage messageList[MAX_MESSAGES];
 int messageCount = 0;
+
+/* DEFINE DATETIME */
+typedef struct {
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+} DateTime;
+
+void formatTimestamp(char *timestamp, size_t size, const DateTime *dateTime) {
+    snprintf(timestamp, size, "%04u-%02u-%02u %02u:%02u:%02u",
+             dateTime->year, dateTime->month, dateTime->day,
+             dateTime->hour, dateTime->minute, dateTime->second);
+}
 
 
 usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
@@ -768,12 +787,28 @@ void TINETChatScreen() {
 
 void displayMessages() {
     gfx_SetTextScale(1, 1);
-    int yOffset = 60;
+    size_t yOffset = 60;
+    int messageWidth = GFX_LCD_WIDTH - 40;
+
     for (int i = 0; i < messageCount; i++) {
-        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
-        yOffset += 10;
+        char messageWithTimestamp[64];
+        char timestamp[20];
+
+        snprintf(messageWithTimestamp, sizeof(messageWithTimestamp), "%s: %s", timestamp, messageList[i].message);
+
+        size_t lineStart = 0;
+        while (lineStart < strlen(messageWithTimestamp)) {
+            char lineBuffer[64];
+            strncpy(lineBuffer, messageWithTimestamp + lineStart, messageWidth);
+            lineBuffer[messageWidth] = '\0';
+            gfx_PrintStringXY(lineBuffer, 20, yOffset);
+            yOffset += 15;
+            lineStart += messageWidth;
+        }
     }
 }
+
+
 
 void addMessage(const char *message, int posY) {
     if (messageCount >= MAX_MESSAGES) {
@@ -789,4 +824,29 @@ void addMessage(const char *message, int posY) {
     newMessage.posY = posY;
     messageList[messageCount] = newMessage;
     messageCount++;
+}
+
+void printWrappedText(const char *text, int x, int y) {
+    int len = strlen(text);
+    int startIndex = 0;
+
+    while (startIndex < len) {
+        int endIndex = startIndex + MAX_LINE_LENGTH;
+        if (endIndex > len) {
+            endIndex = len;
+        }
+
+        while (endIndex > startIndex && text[endIndex] != ' ') {
+            endIndex--;
+        }
+
+        char wrappedLine[MAX_LINE_LENGTH + 1];
+        strncpy(wrappedLine, &text[startIndex], endIndex - startIndex);
+        wrappedLine[endIndex - startIndex] = '\0';
+
+        gfx_PrintStringXY(wrappedLine, x, y);
+
+        startIndex = endIndex + 1;
+        y += 10;
+    }
 }
