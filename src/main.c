@@ -821,34 +821,28 @@ void TINETChatScreen() {
 }
 
 void displayMessages() {
-    if (inside_RTC_chat) {
-        gfx_SetTextScale(1, 1);
-        int yOffset = 60;
-        for (int i = 0; i < messageCount; i++) {
-            gfx_PrintStringXY(messageList[i].message, 20, yOffset);
-            yOffset += 10;
-        }
+    gfx_SetTextScale(1, 1);
+    int yOffset = 60;
+    for (int i = 0; i < messageCount; i++) {
+        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
+        yOffset += 10;
     }
 }
 
 void addMessage(const char *message, int posY) {
-    if (inside_RTC_chat) {
-        if (messageCount >= MAX_MESSAGES) {
-            for (int i = 0; i < messageCount - 1; i++) {
-                strcpy(messageList[i].message, messageList[i + 1].message);
-                messageList[i].posY = messageList[i + 1].posY;
-            }
-            messageCount--;
+    if (messageCount >= MAX_MESSAGES) {
+        for (int i = 0; i < messageCount - 1; i++) {
+            strcpy(messageList[i].message, messageList[i + 1].message);
+            messageList[i].posY = messageList[i + 1].posY;
         }
-
-        if (messageCount == 0) {
-            ChatMessage newMessage;
-            strcpy(newMessage.message, message);
-            newMessage.posY = posY;
-            messageList[messageCount] = newMessage;
-            messageCount++;
-        }
+        messageCount--;
     }
+
+    ChatMessage newMessage;
+    strcpy(newMessage.message, message);
+    newMessage.posY = posY;
+    messageList[messageCount] = newMessage;
+    messageCount++;
 }
 
 void updateCaseBox(bool isUppercase) {
