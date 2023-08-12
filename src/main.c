@@ -196,11 +196,13 @@ typedef struct {
     uint8_t second;
 } DateTime;
 
-void formatTimestamp(char *timestamp, size_t size, const DateTime *dateTime) {
-    snprintf(timestamp, size, "%04u-%02u-%02u %02u:%02u:%02u",
-             dateTime->year, dateTime->month, dateTime->day,
-             dateTime->hour, dateTime->minute, dateTime->second);
-}
+/* DEFINE UI */
+#define TITLE_X_POS 10
+#define TITLE_Y_POS 10
+#define CASE_BOX_X_POS 150
+#define CASE_BOX_Y_POS 10
+#define CASE_BOX_WIDTH 85
+#define CASE_BOX_HEIGHT 25
 
 
 usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
@@ -719,12 +721,8 @@ void calcIDneedsUpdateScreen() {
 
 void TINETChatScreen() {
     gfx_ZeroScreen();
-    gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET Chat", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Chat")) / 2), 5);
-    gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
-    gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("TINET Chat", TITLE_X_POS, TITLE_Y_POS);
 
     const char *uppercasechars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
     const char *lowercasechars = "\0\0\0\0\0\0\0\0\0\0\"wrmh\0\0?[vqlg\0\0:zupkfc\0 ytojeb\0\0xsnida\0\0\0\0\0\0\0\0";
@@ -740,6 +738,8 @@ void TINETChatScreen() {
     bool need_to_send = true;
     bool uppercase = false;
 
+    updateCaseBox(uppercase);
+
     while (key != sk_Clear) {
         char buffer[64] = {0};
         i = 0;
@@ -748,7 +748,6 @@ void TINETChatScreen() {
 
         if (has_srl_device) {
             readSRL();
-            displayMessages();
         }
 
         gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
@@ -785,7 +784,6 @@ void TINETChatScreen() {
                 textX -= gfx_GetStringWidth(&removedChar) * 2;
                 buffer[i] = '\0';
                 gfx_FillRectangle(0, boxY, GFX_LCD_WIDTH, 50);
-                displayMessages();
                 gfx_SetTextScale(2, 2);
                 gfx_PrintStringXY(buffer, textX, boxY + 5);
                 gfx_SetTextScale(1, 1);
@@ -794,7 +792,6 @@ void TINETChatScreen() {
             usb_HandleEvents();
             if (has_srl_device) {
                 readSRL();
-                displayMessages();
             }
             if (key == sk_Clear) {
                 break;
@@ -805,6 +802,7 @@ void TINETChatScreen() {
             }
             if (key == sk_Alpha) {
                 uppercase = !uppercase;
+                updateCaseBox(uppercase);
             }
         } while (1);
 
@@ -825,7 +823,7 @@ void TINETChatScreen() {
 void displayMessages() {
     if (inside_RTC_chat) {
         gfx_SetTextScale(1, 1);
-
+        int yOffset = 60;
         for (int i = 0; i < messageCount; i++) {
             gfx_PrintStringXY(messageList[i].message, 20, yOffset);
             yOffset += 10;
@@ -843,19 +841,18 @@ void addMessage(const char *message, int posY) {
             messageCount--;
         }
 
-        ChatMessage newMessage;
-        strcpy(newMessage.message, message);
-        newMessage.posY = posY;
-        messageList[messageCount] = newMessage;
-        messageCount++;
+        if (messageCount == 0) {
+            ChatMessage newMessage;
+            strcpy(newMessage.message, message);
+            newMessage.posY = posY;
+            messageList[messageCount] = newMessage;
+            messageCount++;
+        }
     }
 }
 
 void updateCaseBox(bool isUppercase) {
     char *boxText = isUppercase ? "UPPERCASE" : "lowercase";
-    // Assuming gfx_FillRectangle and gfx_PrintStringXY are already defined for the system
-    // Clearing an area for the box
-    gfx_FillRectangle(BOX_X_POS, BOX_Y_POS, BOX_WIDTH, BOX_HEIGHT);
-    // Drawing the text
-    gfx_PrintStringXY(boxText, BOX_X_POS + 10, BOX_Y_POS + 10);
+    gfx_FillRectangle(CASE_BOX_X_POS, CASE_BOX_Y_POS, CASE_BOX_WIDTH, CASE_BOX_HEIGHT);
+    gfx_PrintStringXY(boxText, CASE_BOX_X_POS + 10, CASE_BOX_Y_POS + 10);
 }
