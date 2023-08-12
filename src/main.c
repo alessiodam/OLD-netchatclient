@@ -163,7 +163,7 @@ int numMainMenuButtons = sizeof(mainMenuButtons) / sizeof(mainMenuButtons[0]);
 void drawButtons(Button *buttons, int numButtons, int selectedButton) {
     for (int i = 0; i < numButtons; i++) {
         if (i == selectedButton) {
-            gfx_SetColor(255);
+            gfx_SetColor(7);
         } else {
             gfx_SetColor(224);
         }
