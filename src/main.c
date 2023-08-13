@@ -903,10 +903,33 @@ void displayMessages()
 {
     gfx_SetTextScale(1, 1);
     int yOffset = 60;
+    int maxTextWidth = 290;
+    int lineHeight = 10;
+
     for (int i = 0; i < messageCount; i++)
     {
-        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
-        yOffset += 10;
+        const char *message = messageList[i].message;
+        int messageLength = strlen(message);
+        int xPos = 20;
+        int j = 0;
+
+        while (j < messageLength)
+        {
+            int substringWidth = gfx_GetStringWidth(&message[j]);
+
+            if (xPos + substringWidth <= maxTextWidth)
+            {
+                gfx_PrintStringXY(&message[j], xPos, yOffset);
+                xPos += substringWidth;
+                j++;
+            }
+            else
+            {
+                yOffset += lineHeight;
+                xPos = 20;
+            }
+        }
+        yOffset += lineHeight;
     }
 }
 
