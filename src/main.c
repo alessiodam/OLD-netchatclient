@@ -48,7 +48,7 @@ uint8_t appvar;
 /* READ BUFFERS */
 size_t read_flen;
 uint8_t *ptr;
-char in_buffer[64];
+char in_buffer[8192];
 
 /* DEFINE FUNCTIONS */
 void GFXspritesInit();
@@ -815,7 +815,7 @@ void TINETChatScreen()
         gfx_SetColor(7);
         gfx_FillRectangle(15, boxY, 290, 30);
 
-        char output_buffer[137] = "RTC_CHAT:";
+        char output_buffer[41] = "RTC_CHAT:";
 
         do
         {
