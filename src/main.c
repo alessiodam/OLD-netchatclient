@@ -73,6 +73,7 @@ void calcIDneedsUpdateScreen();
 void TINETChatScreen();
 void accountInfoScreen(const char *accountInfo);
 void updateCaseBox(bool isUppercase);
+void ESP8266login();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -157,7 +158,14 @@ void loginButtonPressed()
     if (!USB_connected && !USB_connecting && bridge_connected)
     {
         USB_connecting = true;
-        login();
+        if (is_esp8266 == true)
+        {
+            login(); // on purpose, the ESP8266 login system is not done currently
+        }
+        else
+        {
+            login();
+        }
     }
 }
 
