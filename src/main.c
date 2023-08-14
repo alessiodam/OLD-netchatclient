@@ -87,6 +87,7 @@ uint8_t srl_buf[512];
 bool serial_init_data_sent = false;
 usb_error_t usb_error;
 const usb_standard_descriptors_t *usb_desc;
+bool is_esp8266 = false;
 
 bool key_pressed = false;
 uint8_t debounce_delay = 10;
@@ -630,6 +631,12 @@ void readSRL()
                     displayMessages();
                 }
             }
+        }
+
+        if (strcmp(in_buffer, "ESP8266") == 0)
+        {
+            is_esp8266 = true;
+            gfx_PrintStringXY("ESP8266 connected", 5, 232);
         }
 
         has_unread_data = false;
