@@ -220,12 +220,8 @@ typedef struct
 } DateTime;
 
 /* DEFINE UI */
-#define TITLE_X_POS 10
-#define TITLE_Y_POS 10
-#define CASE_BOX_X_POS 10
-#define CASE_BOX_Y_POS 20
-#define CASE_BOX_WIDTH 80
-#define CASE_BOX_HEIGHT 15
+#define TITLE_X_POS 5
+#define TITLE_Y_POS 5
 
 usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
 {
@@ -799,6 +795,8 @@ void TINETChatScreen()
 {
     gfx_ZeroScreen();
     gfx_SetTextScale(1, 1);
+    gfx_SetColor(25);
+    gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 15);
     gfx_PrintStringXY("TINET Chat", TITLE_X_POS, TITLE_Y_POS);
 
     const char *uppercasechars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
@@ -806,7 +804,6 @@ void TINETChatScreen()
     uint8_t key, i = 0;
     key = os_GetCSC();
 
-    int boxY = 200;
     int textX = 20;
 
     inside_RTC_chat = true;
@@ -827,8 +824,8 @@ void TINETChatScreen()
             readSRL();
         }
 
-        gfx_SetColor(7);
-        gfx_FillRectangle(15, boxY, 290, 30);
+        gfx_SetColor(25);
+        gfx_FillRectangle(0, 210, 320, 30);
 
         char output_buffer[41] = "RTC_CHAT:";
 
@@ -841,7 +838,7 @@ void TINETChatScreen()
                 {
                     char typedChar[2] = {uppercasechars[key], '\0'};
                     gfx_SetTextScale(2, 2);
-                    gfx_PrintStringXY(typedChar, textX, boxY + 5);
+                    gfx_PrintStringXY(typedChar, textX, 210 + 5);
                     gfx_SetTextScale(1, 1);
                     textX += gfx_GetStringWidth(typedChar) * 2;
                     buffer[i++] = uppercasechars[key];
@@ -853,7 +850,7 @@ void TINETChatScreen()
                 {
                     char typedChar[2] = {lowercasechars[key], '\0'};
                     gfx_SetTextScale(2, 2);
-                    gfx_PrintStringXY(typedChar, textX, boxY + 5);
+                    gfx_PrintStringXY(typedChar, textX, 210 + 5);
                     gfx_SetTextScale(1, 1);
                     textX += gfx_GetStringWidth(typedChar) * 2;
                     buffer[i++] = lowercasechars[key];
@@ -866,10 +863,10 @@ void TINETChatScreen()
                 char removedChar = buffer[i];
                 textX -= gfx_GetStringWidth(&removedChar) * 2;
                 buffer[i] = '\0';
-                gfx_SetColor(7);
-                gfx_FillRectangle(15, boxY, 290, 30);
+                gfx_SetColor(25);
+                gfx_FillRectangle(0, 210, 320, 30);
                 gfx_SetTextScale(2, 2);
-                gfx_PrintStringXY(buffer, textX, boxY + 5);
+                gfx_PrintStringXY(buffer, textX, 210 + 5);
                 gfx_SetTextScale(1, 1);
             }
 
@@ -904,8 +901,8 @@ void TINETChatScreen()
 
             SendSerial(output_buffer);
             msleep(100);
-            gfx_SetColor(7);
-            gfx_FillRectangle(15, boxY, 290, 30);
+            gfx_SetColor(25);
+            gfx_FillRectangle(0, 210, 320, 30);
             textX = 20;
             need_to_send = false;
         }
@@ -953,6 +950,7 @@ void displayMessages()
 void displayMessages()
 {
     gfx_SetTextScale(1, 1);
+    gfx_SetTextFGColor(255);
     int yOffset = 60;
     for (int i = 0; i < messageCount; i++)
     {
@@ -982,8 +980,9 @@ void addMessage(const char *message, int posY)
 
 void updateCaseBox(bool isUppercase)
 {
-    char *boxText = isUppercase ? "UPPERCASE" : "lowercase";
+    char *boxText = isUppercase ? "U" : "L";
     gfx_SetColor(18);
-    gfx_FillRectangle(CASE_BOX_X_POS, CASE_BOX_Y_POS, CASE_BOX_WIDTH, CASE_BOX_HEIGHT);
-    gfx_PrintStringXY(boxText, CASE_BOX_X_POS + 5, CASE_BOX_Y_POS + 5);
+    gfx_SetTextFGColor(255);
+    gfx_FillRectangle(GFX_LCD_WIDTH - gfx_GetStringWidth(boxText) - 5, 0, gfx_GetStringWidth(boxText) + 5, 15);
+    gfx_PrintStringXY(boxText, GFX_LCD_WIDTH - gfx_GetStringWidth(boxText) - 5, 2);
 }
