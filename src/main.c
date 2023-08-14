@@ -899,6 +899,7 @@ void TINETChatScreen()
     inside_RTC_chat = false;
 }
 
+/*
 void displayMessages()
 {
     gfx_SetTextScale(1, 1);
@@ -930,6 +931,18 @@ void displayMessages()
             }
         }
         yOffset += lineHeight;
+    }
+}
+*/
+
+void displayMessages()
+{
+    gfx_SetTextScale(1, 1);
+    int yOffset = 60;
+    for (int i = 0; i < messageCount; i++)
+    {
+        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
+        yOffset += 10;
     }
 }
 
