@@ -10,32 +10,32 @@ converts:
     palette: global_palette
     compress: zx0
     images:
-      - login_qr.png
+      - connection/login_qr.png
   - name: usb_connected
     palette: global_palette
     compress: zx0
     images:
-      - usb_connected.png
+      - connection/usb_connected.png
   - name: usb_disconnected
     palette: global_palette
     compress: zx0
     images:
-      - usb_disconnected.png
+      - connection/usb_disconnected.png
   - name: connecting
     palette: global_palette
     compress: zx0
     images:
-      - connecting.png
+      - connection/connecting.png
   - name: bridge_connected
     palette: global_palette
     compress: zx0
     images:
-      - bridge_connected.png
+      - connection/bridge_connected.png
   - name: internet_connected
     palette: global_palette
     compress: zx0
     images:
-      - internet_connected.png
+      - connection/internet_connected.png
 
 outputs:
   - type: c

@@ -983,6 +983,6 @@ void updateCaseBox(bool isUppercase)
     char *boxText = isUppercase ? "U" : "L";
     gfx_SetColor(18);
     gfx_SetTextFGColor(255);
-    gfx_FillRectangle(GFX_LCD_WIDTH - gfx_GetStringWidth(boxText) - 5, 0, gfx_GetStringWidth(boxText) + 5, 15);
+    gfx_FillRectangle(GFX_LCD_WIDTH - gfx_GetStringWidth(boxText) - 5, 0, gfx_GetStringWidth(boxText) + 5, 14);
     gfx_PrintStringXY(boxText, GFX_LCD_WIDTH - gfx_GetStringWidth(boxText) - 5, 4);
 }
