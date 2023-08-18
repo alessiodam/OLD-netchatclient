@@ -6,36 +6,30 @@ palettes:
     images: automatic
 
 converts:
-  - name: login_qrcode
+  - name: keyboard
     palette: global_palette
     compress: zx0
     images:
-      - connection/login_qr.png
-  - name: usb_connected
+      - rtc_chat/keyboard.png
+
+  - name: globe
     palette: global_palette
     compress: zx0
     images:
-      - connection/usb_connected.png
-  - name: usb_disconnected
+      - connection/globe.png
+
+  - name: key
     palette: global_palette
     compress: zx0
     images:
-      - connection/usb_disconnected.png
-  - name: connecting
+      - connection/key.png
+
+  - name: bridge
     palette: global_palette
     compress: zx0
     images:
-      - connection/connecting.png
-  - name: bridge_connected
-    palette: global_palette
-    compress: zx0
-    images:
-      - connection/bridge_connected.png
-  - name: internet_connected
-    palette: global_palette
-    compress: zx0
-    images:
-      - connection/internet_connected.png
+      - connection/bridge.png
+
 
 outputs:
   - type: c
@@ -43,9 +37,7 @@ outputs:
     palettes:
       - global_palette
     converts:
-      - login_qrcode
-      - usb_connected
-      - usb_disconnected
-      - connecting
-      - bridge_connected
-      - internet_connected
+      - keyboard
+      - globe
+      - key
+      - bridge

@@ -32,7 +32,9 @@
 #include <ti/info.h>
 #include <stdint.h>
 
-#define MAX_MESSAGES 10
+#include "gfx/gfx.h"
+
+#define MAX_MESSAGES 15
 #define MAX_LINE_LENGTH (GFX_LCD_WIDTH - 40)
 
 const system_info_t *systemInfo;
@@ -92,6 +94,12 @@ bool is_esp8266 = false;
 
 bool key_pressed = false;
 uint8_t debounce_delay = 10;
+
+/* DEFINE SPRITES */
+gfx_sprite_t *key_sprite;
+gfx_sprite_t *globe_sprite;
+gfx_sprite_t *bridge_sprite;
+gfx_sprite_t *keyboard_sprite;
 
 /* CONNECTION FUNCTIONS */
 void SendSerial(const char *message)
@@ -155,6 +163,10 @@ int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0])
 
 void loginButtonPressed()
 {
+    free(globe_sprite);
+    free(bridge_sprite);
+    free(key_sprite);
+
     if (!USB_connected && !USB_connecting && bridge_connected)
     {
         USB_connecting = true;
@@ -307,6 +319,14 @@ int main(void)
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
 
+    /* SETUP MAIN LOGIN SPRITES */
+    globe_sprite = gfx_MallocSprite(globe_width, globe_height);
+    bridge_sprite = gfx_MallocSprite(bridge_width, bridge_height);
+    key_sprite = gfx_MallocSprite(key_width, bridge_height);
+    zx0_Decompress(bridge_sprite, bridge_compressed);
+    zx0_Decompress(globe_sprite, globe_compressed);
+    zx0_Decompress(key_sprite, key_compressed);
+
     /* CALC ID DISPLAY BOTTOM RIGHT */
     char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
     for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++)
@@ -386,6 +406,10 @@ int main(void)
             mainMenuButtons[selectedButton].action();
         }
     } while (kb_Data[6] != kb_Clear);
+
+    free(key_sprite);
+    free(bridge_sprite);
+    free(globe_sprite);
 
     quitProgram();
 
@@ -674,6 +698,10 @@ void displayIP(const char *ipAddress)
 
 void howToUseScreen()
 {
+    free(globe_sprite);
+    free(bridge_sprite);
+    free(key_sprite);
+
     gfx_ZeroScreen();
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("How To TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("How To TINET")) / 2), 5);
@@ -793,25 +821,38 @@ void calcIDneedsUpdateScreen()
 
 void TINETChatScreen()
 {
-    gfx_ZeroScreen();
-    gfx_SetTextScale(1, 1);
-    gfx_SetColor(25);
-    gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 15);
-    gfx_PrintStringXY("TINET Chat", TITLE_X_POS, TITLE_Y_POS);
-
     const char *uppercasechars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
     const char *lowercasechars = "\0\0\0\0\0\0\0\0\0\0\"wrmh\0\0?[vqlg\0\0:zupkfc\0 ytojeb\0\0xsnida\0\0\0\0\0\0\0\0";
     uint8_t key, i = 0;
-    key = os_GetCSC();
-
-    int textX = 20;
-
+    int textX = 10;
     inside_RTC_chat = true;
     bool need_to_send = true;
     bool uppercase = false;
+    bool emojiMethod = false;
 
+    typedef struct
+    {
+        const char *sequence;
+        gfx_sprite_t *sprite;
+    } EmojiSpriteEntry;
+
+    /* SETUP CHAT SPRITES */
+    keyboard_sprite = gfx_MallocSprite(keyboard_width, keyboard_height);
+    zx0_Decompress(keyboard_sprite, keyboard_compressed);
+
+    EmojiSpriteEntry emojiSpriteTable[] = {
+        {":kb:", keyboard_sprite}, // pointer to emoji
+    };
+
+    /* DRAW SCREEN */
+    gfx_ZeroScreen();
+    gfx_SetTextScale(1, 1);
+    gfx_SetColor(25);
+    gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 20);
+    gfx_PrintStringXY("TINET Chat", TITLE_X_POS, TITLE_Y_POS);
     updateCaseBox(uppercase);
 
+    key = os_GetCSC();
     while (key != sk_Clear)
     {
         char buffer[128] = {0};
@@ -825,35 +866,38 @@ void TINETChatScreen()
         }
 
         gfx_SetColor(25);
-        gfx_FillRectangle(0, 210, 320, 30);
+        gfx_FillRectangle(0, 190, 320, 50);
 
         char output_buffer[41] = "RTC_CHAT:";
 
         do
         {
             key = os_GetCSC();
-            if (uppercase)
+            if (!emojiMethod)
             {
-                if (uppercasechars[key])
+                const char *charSet = (uppercase) ? uppercasechars : lowercasechars;
+                char typedChar = charSet[key];
+
+                if (typedChar && key != 0)
                 {
-                    char typedChar[2] = {uppercasechars[key], '\0'};
                     gfx_SetTextScale(2, 2);
-                    gfx_PrintStringXY(typedChar, textX, 210 + 5);
+                    gfx_PrintStringXY(&typedChar, textX, 220);
                     gfx_SetTextScale(1, 1);
-                    textX += gfx_GetStringWidth(typedChar) * 2;
-                    buffer[i++] = uppercasechars[key];
+                    textX += gfx_GetStringWidth(&typedChar) * 2;
+                    buffer[i++] = typedChar;
                 }
             }
             else
             {
-                if (lowercasechars[key])
+                for (size_t j = 0; j < sizeof(emojiSpriteTable) / sizeof(emojiSpriteTable[0]); j++)
                 {
-                    char typedChar[2] = {lowercasechars[key], '\0'};
-                    gfx_SetTextScale(2, 2);
-                    gfx_PrintStringXY(typedChar, textX, 210 + 5);
-                    gfx_SetTextScale(1, 1);
-                    textX += gfx_GetStringWidth(typedChar) * 2;
-                    buffer[i++] = lowercasechars[key];
+                    if (strncmp(emojiSpriteTable[j].sequence, buffer + i, strlen(emojiSpriteTable[j].sequence)) == 0)
+                    {
+                        gfx_Sprite(emojiSpriteTable[j].sprite, textX, 210);
+                        textX += emojiSpriteTable[j].sprite->width;
+                        i += strlen(emojiSpriteTable[j].sequence);
+                        break;
+                    }
                 }
             }
 
@@ -866,7 +910,7 @@ void TINETChatScreen()
                 gfx_SetColor(25);
                 gfx_FillRectangle(0, 210, 320, 30);
                 gfx_SetTextScale(2, 2);
-                gfx_PrintStringXY(buffer, textX, 210 + 5);
+                gfx_PrintStringXY(buffer, 10, 220);
                 gfx_SetTextScale(1, 1);
             }
 
@@ -893,6 +937,20 @@ void TINETChatScreen()
                 uppercase = !uppercase;
                 updateCaseBox(uppercase);
             }
+
+            if (key == sk_Mode)
+            {
+                emojiMethod = !emojiMethod;
+                gfx_FillRectangle(GFX_LCD_WIDTH - keyboard_width - 5, GFX_LCD_HEIGHT - keyboard_height - 5, keyboard_width, keyboard_height);
+                if (emojiMethod == true)
+                {
+                    gfx_Sprite(keyboard_sprite, GFX_LCD_WIDTH - keyboard_width - 5, GFX_LCD_HEIGHT - keyboard_height - 5);
+                }
+                else
+                {
+                    gfx_Sprite(keyboard_sprite, GFX_LCD_WIDTH - keyboard_width - 5, GFX_LCD_HEIGHT - keyboard_height - 5);
+                }
+            }
         } while (1);
 
         if (strcmp(buffer, "") != 0 && need_to_send == true)
@@ -909,6 +967,7 @@ void TINETChatScreen()
     }
 
     inside_RTC_chat = false;
+    free(keyboard_sprite);
 }
 
 /*
@@ -951,10 +1010,10 @@ void displayMessages()
 {
     gfx_SetTextScale(1, 1);
     gfx_SetTextFGColor(255);
-    int yOffset = 60;
+    int yOffset = 25;
     for (int i = 0; i < messageCount; i++)
     {
-        gfx_PrintStringXY(messageList[i].message, 20, yOffset);
+        gfx_PrintStringXY(messageList[i].message, 10, yOffset);
         yOffset += 10;
     }
 }
@@ -965,14 +1024,16 @@ void addMessage(const char *message, int posY)
     {
         for (int i = 0; i < messageCount - 1; i++)
         {
-            strcpy(messageList[i].message, messageList[i + 1].message);
+            strncpy(messageList[i].message, messageList[i + 1].message, sizeof(messageList[i].message) - 1);
+            messageList[i].message[sizeof(messageList[i].message) - 1] = '\0';
             messageList[i].posY = messageList[i + 1].posY;
         }
         messageCount--;
     }
 
     ChatMessage newMessage;
-    strcpy(newMessage.message, message);
+    strncpy(newMessage.message, message, sizeof(newMessage.message) - 1);
+    newMessage.message[sizeof(newMessage.message) - 1] = '\0';
     newMessage.posY = posY;
     messageList[messageCount] = newMessage;
     messageCount++;
@@ -980,8 +1041,8 @@ void addMessage(const char *message, int posY)
 
 void updateCaseBox(bool isUppercase)
 {
-    char *boxText = isUppercase ? "U" : "L";
-    gfx_SetColor(18);
+    char *boxText = isUppercase ? "UC" : "lc";
+    gfx_SetColor(25);
     gfx_SetTextFGColor(255);
     gfx_FillRectangle(GFX_LCD_WIDTH - gfx_GetStringWidth(boxText) - 5, 0, gfx_GetStringWidth(boxText) + 5, 14);
     gfx_PrintStringXY(boxText, GFX_LCD_WIDTH - gfx_GetStringWidth(boxText) - 5, 4);
