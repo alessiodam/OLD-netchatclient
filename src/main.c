@@ -50,7 +50,7 @@ uint8_t appvar;
 /* READ BUFFERS */
 size_t read_flen;
 uint8_t *ptr;
-char in_buffer[8192];
+char in_buffer[32768];
 
 /* DEFINE FUNCTIONS */
 void GFXspritesInit();
