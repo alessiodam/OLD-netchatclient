@@ -7,14 +7,15 @@ The official client for TINET
 [![Documentation Status](https://readthedocs.org/projects/tinet-calc/badge/?version=latest)](https://tinet-calc.readthedocs.io/en/latest/?badge=latest)
 
 ## How to use
-1. Download the [latest client](https://github.com/tkbstudios/tinet-calc/releases/latest).  
-2. Go to the [Web Dashboard](https://tinet.tkbstudios.com/)  
-3. Register or login an account.  
-4. On the dashboard, download your keyfile.  
-5. Open [TI Connect CE](https://education.ti.com/en/products/computer-software/ti-connect-ce-sw)  
-6. Upload your downloaded keyfile on your calculator.  
-7. Open the [TINET] program on your calculator.  
-8. Press [enter] to connect!  
+1. Install [TI-Connect CE](https://education.ti.com/en/products/computer-software/ti-connect-ce-sw) (Or [Tilp](http://lpg.ticalc.org/prj_tilp/) if you are on Linux)
+2. Download the [latest client](https://github.com/tkbstudios/tinet-calc/releases/latest) and send it to your calculator using TI-Connect or Tilp
+3. Install the [clibs.8xg](https://github.com/CE-Programming/libraries/releases/latest) libraries if you haven't already
+4. Go to the [Web Dashboard](https://tinet.tkbstudios.com/)  
+5. Register or login an account.  
+6. On the dashboard, download your keyfile.  
+7. Upload your downloaded keyfile on your calculator.  
+8. Open the [TINET] program on your calculator.  
+9. Press [enter] to connect!  
 
 ## What to do if it doesn't work
 If you came across this screen:  
