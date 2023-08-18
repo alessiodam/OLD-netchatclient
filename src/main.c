@@ -12,6 +12,7 @@
  *--------------Contributors--------------
  * TIny_Hacker
  * ACagliano (Anthony Cagliano)
+ * Powerbyte7
  *--------------------------------------
  */
 
@@ -78,6 +79,7 @@ void TINETChatScreen();
 void accountInfoScreen(const char *accountInfo);
 void updateCaseBox(bool isUppercase);
 void ESP8266login();
+bool kb_Update();
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -94,7 +96,7 @@ usb_error_t usb_error;
 const usb_standard_descriptors_t *usb_desc;
 bool is_esp8266 = false;
 
-bool key_pressed = false;
+uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
 
 /* DEFINE SPRITES */
@@ -120,6 +122,26 @@ void SendSerial(const char *message)
 
         totalBytesWritten += bytesWritten;
     }
+}
+
+/* Updates kb_Data and keeps track of previous keypresses, returns true if changes were detected */
+bool kb_Update()
+{
+    // Update previous input state
+    for (uint8_t i = 0; i <= 7; i++) {
+        previous_kb_Data[i] = kb_Data[i];
+    }
+    
+    kb_Scan();
+
+    // Determine whether input has changed
+    for (uint8_t i = 0; i <= 7; i++) {
+        if (previous_kb_Data[i] != kb_Data[i]) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /* DEFINE BUTTONS */
@@ -376,7 +398,7 @@ int main(void)
 
     do
     {
-        kb_Scan();
+        kb_Update();
 
         usb_HandleEvents();
         if (has_srl_device)
@@ -389,17 +411,17 @@ int main(void)
             sendSerialInitData();
         }
 
-        if (kb_Data[7] == kb_Down)
+        if (kb_Data[7] == kb_Down && previous_kb_Data[7] != kb_Down)
         {
             selectedButton = (selectedButton + 1) % numMainMenuButtons;
             drawButtons(mainMenuButtons, numMainMenuButtons, selectedButton);
         }
-        else if (kb_Data[7] == kb_Up)
+        else if (kb_Data[7] == kb_Up && previous_kb_Data[7] != kb_Up)
         {
             selectedButton = (selectedButton - 1 + numMainMenuButtons) % numMainMenuButtons;
             drawButtons(mainMenuButtons, numMainMenuButtons, selectedButton);
         }
-        else if (kb_Data[6] == kb_Enter)
+        else if (kb_Data[6] == kb_Enter && previous_kb_Data[6] != kb_Enter)
         {
             mainMenuButtons[selectedButton].action();
         }
@@ -457,7 +479,7 @@ void accountInfoScreen(const char *accountInfo)
     gfx_PrintString(infoTokens[7]);
     do
     {
-        kb_Scan();
+        kb_Update();
 
         usb_HandleEvents();
         if (has_srl_device)
@@ -488,7 +510,7 @@ void dashboardScreen()
 
     do
     {
-        kb_Scan();
+        kb_Update();
         usb_HandleEvents();
         if (has_srl_device)
         {
@@ -500,17 +522,17 @@ void dashboardScreen()
             break;
         }
 
-        if (kb_Data[7] == kb_Down)
+        if (kb_Data[7] == kb_Down && previous_kb_Data[7] != kb_Down)
         {
             selectedButton = (selectedButton + 1) % numDashboardButtons;
             drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
         }
-        else if (kb_Data[7] == kb_Up)
+        else if (kb_Data[7] == kb_Up && previous_kb_Data[7] != kb_Up)
         {
             selectedButton = (selectedButton - 1 + numDashboardButtons) % numDashboardButtons;
             drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
         }
-        else if (kb_Data[6] == kb_Enter)
+        else if (kb_Data[6] == kb_Enter && previous_kb_Data[6] != kb_Enter)
         {
             dashboardButtons[selectedButton].action();
         }
@@ -723,7 +745,7 @@ void howToUseScreen()
 
     do
     {
-        kb_Scan();
+        kb_Update();
 
         usb_HandleEvents();
         if (has_srl_device)
@@ -753,7 +775,7 @@ void alreadyConnectedScreen()
     gfx_PrintStringXY("on https://tinet.tkbstudios.com/dashboard", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/dashboard")) / 2, GFX_LCD_HEIGHT / 2);
     do
     {
-        kb_Scan();
+        kb_Update();
         if (kb_Data[6] == kb_Clear)
         {
             break;
@@ -770,7 +792,7 @@ void userNotFoundScreen()
     gfx_PrintStringXY("Your user doesn't exist", (GFX_LCD_WIDTH - gfx_GetStringWidth("Your user doesn't exist")) / 2, 35);
     do
     {
-        kb_Scan();
+        kb_Update();
 
         usb_HandleEvents();
         if (has_srl_device)
@@ -813,7 +835,7 @@ void calcIDneedsUpdateScreen()
     }
     do
     {
-        kb_Scan();
+        kb_Update();
 
         usb_HandleEvents();
         if (has_srl_device)
