@@ -163,10 +163,6 @@ int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0])
 
 void loginButtonPressed()
 {
-    free(globe_sprite);
-    free(bridge_sprite);
-    free(key_sprite);
-
     if (!USB_connected && !USB_connecting && bridge_connected)
     {
         USB_connecting = true;
@@ -406,10 +402,6 @@ int main(void)
             mainMenuButtons[selectedButton].action();
         }
     } while (kb_Data[6] != kb_Clear);
-
-    free(key_sprite);
-    free(bridge_sprite);
-    free(globe_sprite);
 
     quitProgram();
 
