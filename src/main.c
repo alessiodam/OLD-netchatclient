@@ -623,6 +623,21 @@ void readSRL()
             userNotFoundScreen();
         }
 
+        if (strcmp(in_buffer, "INVALID_CALC_KEY") == 0)
+        {
+            printf("Invalid\ncalc key");
+        }
+
+        if (strcmp(in_buffer, "DIFFERENT_CALC_ID") == 0)
+        {
+            printf("Different\ncalc ID");
+        }
+
+        if (strcmp(in_buffer, "CALC_BANNED") == 0)
+        {
+            printf("You're\nbanned.");
+        }
+
         if (startsWith(in_buffer, "ACCOUNT_INFO:"))
         {
             printf("got acc inf");
