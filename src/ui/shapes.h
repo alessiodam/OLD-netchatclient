@@ -9,7 +9,6 @@
  * --------------------------------------
 **/
 // TKB Studios asked for permission to use this code snippet and was allowed by RoccoLox Programs.
-// changes were made to this code
 
 #ifndef SHAPES_H
 #define SHAPES_H
@@ -22,7 +21,7 @@
 extern "C" {
 #endif
 
-void shapes_RoundRectangleFill(const uint8_t color, const uint8_t radius, const int width, const uint8_t height, const int x, const uint8_t y, const bool outline_needed, const uint8_t outline_color);
+void shapes_RoundRectangleFill(const uint8_t color, const uint8_t radius, const int width, const uint8_t height, const int x, const uint8_t y);
 
 #ifdef __cplusplus
 }

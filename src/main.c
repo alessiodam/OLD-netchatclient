@@ -34,6 +34,8 @@
 
 #include "gfx/gfx.h"
 
+#include "ui/shapes.h"
+
 #define MAX_MESSAGES 15
 #define MAX_LINE_LENGTH (GFX_LCD_WIDTH - 40)
 
@@ -190,13 +192,13 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton)
     {
         if (i == selectedButton)
         {
-            gfx_SetColor(7);
+            shapes_RoundRectangleFill(255, 10, buttons[i].width, buttons[i].height, buttons[i].x, buttons[i].y);
+            shapes_RoundRectangleFill(18, 10, buttons[i].width - 2, buttons[i].height - 2, buttons[i].x + 1, buttons[i].y + 1);
         }
         else
         {
-            gfx_SetColor(224);
+            shapes_RoundRectangleFill(18, 10, buttons[i].width, buttons[i].height, buttons[i].x, buttons[i].y);
         }
-        gfx_Rectangle(buttons[i].x, buttons[i].y, buttons[i].width, buttons[i].height);
         gfx_PrintStringXY(buttons[i].label, buttons[i].x + 10, buttons[i].y + 10);
     }
     msleep(250);
