@@ -454,14 +454,8 @@ void accountInfoScreen(const char *accountInfo)
     int y = 65;
     gfx_PrintStringXY("Account Info:", 1, y);
     y += 20;
-    gfx_PrintStringXY("MB Used This Month: ", 1, y);
-    gfx_PrintString(infoTokens[0]);
-    y += 15;
     gfx_PrintStringXY("MB Used Total: ", 1, y);
     gfx_PrintString(infoTokens[1]);
-    y += 15;
-    gfx_PrintStringXY("Requests This Month: ", 1, y);
-    gfx_PrintString(infoTokens[2]);
     y += 15;
     gfx_PrintStringXY("Total Requests: ", 1, y);
     gfx_PrintString(infoTokens[3]);
