@@ -100,10 +100,10 @@ uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
 
 /* DEFINE SPRITES */
-gfx_sprite_t *key_sprite;
-gfx_sprite_t *globe_sprite;
-gfx_sprite_t *bridge_sprite;
 gfx_sprite_t *keyboard_sprite;
+gfx_sprite_t *globe_sprite;
+gfx_sprite_t *key_sprite;
+gfx_sprite_t *bridge_sprite;
 
 /* CONNECTION FUNCTIONS */
 void SendSerial(const char *message)
@@ -329,6 +329,10 @@ int main(void)
     // Initialize graphics and settings
     gfx_Begin();
     GFXsettings();
+
+    // load sprites
+    load_sprites();
+    decompress_sprites();
 
     // Display main menu
     gfx_ZeroScreen();
