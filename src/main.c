@@ -100,10 +100,167 @@ uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
 
 /* DEFINE SPRITES */
-gfx_sprite_t *keyboard_sprite;
 gfx_sprite_t *globe_sprite;
 gfx_sprite_t *key_sprite;
 gfx_sprite_t *bridge_sprite;
+gfx_sprite_t *keyboard_sprite;
+
+/* DEFINE EMOJIS */
+gfx_sprite_t *blush_sprite;
+gfx_sprite_t *cry_sprite;
+gfx_sprite_t *dark_sunglasses_sprite;
+gfx_sprite_t *dizzy_face_sprite;
+gfx_sprite_t *eyeglasses_sprite;
+gfx_sprite_t *eyes_sprite;
+gfx_sprite_t *flushed_sprite;
+gfx_sprite_t *frowning2_sprite;
+gfx_sprite_t *grimacing_sprite;
+gfx_sprite_t *grin_sprite;
+gfx_sprite_t *grinning_sprite;
+gfx_sprite_t *heart_eyes_sprite;
+gfx_sprite_t *hushed_sprite;
+gfx_sprite_t *innocent_sprite;
+gfx_sprite_t *joy_sprite;
+gfx_sprite_t *kissing_sprite;
+gfx_sprite_t *kissing_heart_sprite;
+gfx_sprite_t *no_mouth_sprite;
+gfx_sprite_t *open_mouth_sprite;
+gfx_sprite_t *pensive_sprite;
+gfx_sprite_t *poop_sprite;
+gfx_sprite_t *rage_sprite;
+gfx_sprite_t *rofl_sprite;
+gfx_sprite_t *sleeping_sprite;
+gfx_sprite_t *slight_smile_sprite;
+gfx_sprite_t *smiley_sprite;
+gfx_sprite_t *smirk_sprite;
+gfx_sprite_t *sob_sprite;
+gfx_sprite_t *stuck_out_tongue_sprite;
+gfx_sprite_t *stuck_out_tongue_closed_eyes_sprite;
+gfx_sprite_t *stuck_out_tongue_winking_eye_sprite;
+gfx_sprite_t *sunglasses_sprite;
+gfx_sprite_t *sweat_sprite;
+gfx_sprite_t *wink_sprite;
+gfx_sprite_t *yum_sprite;
+gfx_sprite_t *zipper_mouth_sprite;
+
+void load_sprites() {
+    keyboard_sprite = gfx_MallocSprite(keyboard_width, keyboard_height);
+    blush_sprite = gfx_MallocSprite(blush_width, blush_height);
+    cry_sprite = gfx_MallocSprite(cry_width, cry_height);
+    dark_sunglasses_sprite = gfx_MallocSprite(dark_sunglasses_width, dark_sunglasses_height);
+    dizzy_face_sprite = gfx_MallocSprite(dizzy_face_width, dizzy_face_height);
+    eyeglasses_sprite = gfx_MallocSprite(eyeglasses_width, eyeglasses_height);
+    eyes_sprite = gfx_MallocSprite(eyes_width, eyes_height);
+    flushed_sprite = gfx_MallocSprite(flushed_width, flushed_height);
+    frowning2_sprite = gfx_MallocSprite(frowning2_width, frowning2_height);
+    grimacing_sprite = gfx_MallocSprite(grimacing_width, grimacing_height);
+    grin_sprite = gfx_MallocSprite(grin_width, grin_height);
+    grinning_sprite = gfx_MallocSprite(grinning_width, grinning_height);
+    heart_eyes_sprite = gfx_MallocSprite(heart_eyes_width, heart_eyes_height);
+    hushed_sprite = gfx_MallocSprite(hushed_width, hushed_height);
+    innocent_sprite = gfx_MallocSprite(innocent_width, innocent_height);
+    joy_sprite = gfx_MallocSprite(joy_width, joy_height);
+    kissing_sprite = gfx_MallocSprite(kissing_width, kissing_height);
+    kissing_heart_sprite = gfx_MallocSprite(kissing_heart_width, kissing_heart_height);
+    no_mouth_sprite = gfx_MallocSprite(no_mouth_width, no_mouth_height);
+    open_mouth_sprite = gfx_MallocSprite(open_mouth_width, open_mouth_height);
+    pensive_sprite = gfx_MallocSprite(pensive_width, pensive_height);
+    poop_sprite = gfx_MallocSprite(poop_width, poop_height);
+    rage_sprite = gfx_MallocSprite(rage_width, rage_height);
+    rofl_sprite = gfx_MallocSprite(rofl_width, rofl_height);
+    sleeping_sprite = gfx_MallocSprite(sleeping_width, sleeping_height);
+    slight_smile_sprite = gfx_MallocSprite(slight_smile_width, slight_smile_height);
+    smiley_sprite = gfx_MallocSprite(smiley_width, smiley_height);
+    smirk_sprite = gfx_MallocSprite(smirk_width, smirk_height);
+    sob_sprite = gfx_MallocSprite(sob_width, sob_height);
+    stuck_out_tongue_sprite = gfx_MallocSprite(stuck_out_tongue_width, stuck_out_tongue_height);
+    stuck_out_tongue_closed_eyes_sprite = gfx_MallocSprite(stuck_out_tongue_closed_eyes_width, stuck_out_tongue_closed_eyes_height);
+    stuck_out_tongue_winking_eye_sprite = gfx_MallocSprite(stuck_out_tongue_winking_eye_width, stuck_out_tongue_winking_eye_height);
+    sunglasses_sprite = gfx_MallocSprite(sunglasses_width, sunglasses_height);
+    sweat_sprite = gfx_MallocSprite(sweat_width, sweat_height);
+    wink_sprite = gfx_MallocSprite(wink_width, wink_height);
+    yum_sprite = gfx_MallocSprite(yum_width, yum_height);
+    zipper_mouth_sprite = gfx_MallocSprite(zipper_mouth_width, zipper_mouth_height);
+}
+
+void decompress_sprites() {
+    zx0_Decompress(keyboard_sprite, keyboard_compressed);
+    zx0_Decompress(blush_sprite, blush_compressed);
+    zx0_Decompress(cry_sprite, cry_compressed);
+    zx0_Decompress(dark_sunglasses_sprite, dark_sunglasses_compressed);
+    zx0_Decompress(dizzy_face_sprite, dizzy_face_compressed);
+    zx0_Decompress(eyeglasses_sprite, eyeglasses_compressed);
+    zx0_Decompress(eyes_sprite, eyes_compressed);
+    zx0_Decompress(flushed_sprite, flushed_compressed);
+    zx0_Decompress(frowning2_sprite, frowning2_compressed);
+    zx0_Decompress(grimacing_sprite, grimacing_compressed);
+    zx0_Decompress(grin_sprite, grin_compressed);
+    zx0_Decompress(grinning_sprite, grinning_compressed);
+    zx0_Decompress(heart_eyes_sprite, heart_eyes_compressed);
+    zx0_Decompress(hushed_sprite, hushed_compressed);
+    zx0_Decompress(innocent_sprite, innocent_compressed);
+    zx0_Decompress(joy_sprite, joy_compressed);
+    zx0_Decompress(kissing_sprite, kissing_compressed);
+    zx0_Decompress(kissing_heart_sprite, kissing_heart_compressed);
+    zx0_Decompress(no_mouth_sprite, no_mouth_compressed);
+    zx0_Decompress(open_mouth_sprite, open_mouth_compressed);
+    zx0_Decompress(pensive_sprite, pensive_compressed);
+    zx0_Decompress(poop_sprite, poop_compressed);
+    zx0_Decompress(rage_sprite, rage_compressed);
+    zx0_Decompress(rofl_sprite, rofl_compressed);
+    zx0_Decompress(sleeping_sprite, sleeping_compressed);
+    zx0_Decompress(slight_smile_sprite, slight_smile_compressed);
+    zx0_Decompress(smiley_sprite, smiley_compressed);
+    zx0_Decompress(smirk_sprite, smirk_compressed);
+    zx0_Decompress(sob_sprite, sob_compressed);
+    zx0_Decompress(stuck_out_tongue_sprite, stuck_out_tongue_compressed);
+    zx0_Decompress(stuck_out_tongue_closed_eyes_sprite, stuck_out_tongue_closed_eyes_compressed);
+    zx0_Decompress(stuck_out_tongue_winking_eye_sprite, stuck_out_tongue_winking_eye_compressed);
+    zx0_Decompress(sunglasses_sprite, sunglasses_compressed);
+    zx0_Decompress(sweat_sprite, sweat_compressed);
+    zx0_Decompress(wink_sprite, wink_compressed);
+    zx0_Decompress(yum_sprite, yum_compressed);
+    zx0_Decompress(zipper_mouth_sprite, zipper_mouth_compressed);
+}
+
+void release_sprites() {
+    free(blush_sprite);
+    free(cry_sprite);
+    free(dark_sunglasses_sprite);
+    free(dizzy_face_sprite);
+    free(eyeglasses_sprite);
+    free(eyes_sprite);
+    free(flushed_sprite);
+    free(frowning2_sprite);
+    free(grimacing_sprite);
+    free(grin_sprite);
+    free(grinning_sprite);
+    free(heart_eyes_sprite);
+    free(hushed_sprite);
+    free(innocent_sprite);
+    free(joy_sprite);
+    free(kissing_sprite);
+    free(kissing_heart_sprite);
+    free(no_mouth_sprite);
+    free(open_mouth_sprite);
+    free(pensive_sprite);
+    free(poop_sprite);
+    free(rage_sprite);
+    free(rofl_sprite);
+    free(sleeping_sprite);
+    free(slight_smile_sprite);
+    free(smiley_sprite);
+    free(smirk_sprite);
+    free(sob_sprite);
+    free(stuck_out_tongue_sprite);
+    free(stuck_out_tongue_closed_eyes_sprite);
+    free(stuck_out_tongue_winking_eye_sprite);
+    free(sunglasses_sprite);
+    free(sweat_sprite);
+    free(wink_sprite);
+    free(yum_sprite);
+    free(zipper_mouth_sprite);
+}
 
 /* CONNECTION FUNCTIONS */
 void SendSerial(const char *message)
