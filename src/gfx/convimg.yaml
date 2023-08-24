@@ -30,6 +30,221 @@ converts:
     images:
       - connection/bridge.png
 
+  - name: blush
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/blush.png
+
+  - name: cry
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/cry.png
+
+  - name: dark_sunglasses
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/dark_sunglasses.png
+
+  - name: dizzy_face
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/dizzy_face.png
+
+  - name: eyeglasses
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/eyeglasses.png
+
+  - name: eyes
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/eyes.png
+
+  - name: flushed
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/flushed.png
+
+  - name: frowning2
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/frowning2.png
+
+  - name: grimacing
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/grimacing.png
+
+  - name: grin
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/grin.png
+
+  - name: grinning
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/grinning.png
+
+  - name: heart_eyes
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/heart_eyes.png
+
+  - name: hushed
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/hushed.png
+
+  - name: innocent
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/innocent.png
+
+  - name: joy
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/joy.png
+
+  - name: kissing
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/kissing.png
+
+  - name: kissing_heart
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/kissing_heart.png
+
+  - name: no_mouth
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/no_mouth.png
+
+  - name: open_mouth
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/open_mouth.png
+
+  - name: pensive
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/pensive.png
+
+  - name: poop
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/poop.png
+
+  - name: rage
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/rage.png
+
+  - name: rofl
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/rofl.png
+
+  - name: sleeping
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/sleeping.png
+
+  - name: slight_smile
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/slight_smile.png
+
+  - name: smiley
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/smiley.png
+
+  - name: smirk
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/smirk.png
+
+  - name: sob
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/sob.png
+
+  - name: stuck_out_tongue
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/stuck_out_tongue.png
+
+  - name: stuck_out_tongue_closed_eyes
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/stuck_out_tongue_closed_eyes.png
+
+  - name: stuck_out_tongue_winking_eye
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/stuck_out_tongue_winking_eye.png
+
+  - name: sunglasses
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/sunglasses.png
+
+  - name: sweat
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/sweat.png
+
+  - name: wink
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/wink.png
+
+  - name: yum
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/yum.png
+
+  - name: zipper_mouth
+    palette: global_palette
+    compress: zx0
+    images:
+      - emojis/zipper_mouth.png
 
 outputs:
   - type: c
@@ -41,3 +256,39 @@ outputs:
       - globe
       - key
       - bridge
+      - blush
+      - cry
+      - dark_sunglasses
+      - dizzy_face
+      - eyeglasses
+      - eyes
+      - flushed
+      - frowning2
+      - grimacing
+      - grin
+      - grinning
+      - heart_eyes
+      - hushed
+      - innocent
+      - joy
+      - kissing
+      - kissing_heart
+      - no_mouth
+      - open_mouth
+      - pensive
+      - poop
+      - rage
+      - rofl
+      - sleeping
+      - slight_smile
+      - smiley
+      - smirk
+      - sob
+      - stuck_out_tongue
+      - stuck_out_tongue_closed_eyes
+      - stuck_out_tongue_winking_eye
+      - sunglasses
+      - sweat
+      - wink
+      - yum
+      - zipper_mouth
