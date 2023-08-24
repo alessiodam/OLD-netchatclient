@@ -144,6 +144,9 @@ gfx_sprite_t *yum_sprite;
 gfx_sprite_t *zipper_mouth_sprite;
 
 void load_sprites() {
+    globe_sprite = gfx_MallocSprite(globe_width, globe_height);
+    key_sprite = gfx_MallocSprite(key_width, key_height);
+    bridge_sprite = gfx_MallocSprite(bridge_width, bridge_height);
     keyboard_sprite = gfx_MallocSprite(keyboard_width, keyboard_height);
     blush_sprite = gfx_MallocSprite(blush_width, blush_height);
     cry_sprite = gfx_MallocSprite(cry_width, cry_height);
@@ -184,6 +187,9 @@ void load_sprites() {
 }
 
 void decompress_sprites() {
+    zx0_Decompress(globe_sprite, globe_compressed);
+    zx0_Decompress(key_sprite, key_compressed);
+    zx0_Decompress(bridge_sprite, bridge_compressed);
     zx0_Decompress(keyboard_sprite, keyboard_compressed);
     zx0_Decompress(blush_sprite, blush_compressed);
     zx0_Decompress(cry_sprite, cry_compressed);
@@ -224,6 +230,10 @@ void decompress_sprites() {
 }
 
 void release_sprites() {
+    free(globe_sprite);
+    free(key_sprite);
+    free(bridge_sprite);
+    free(keyboard_sprite);
     free(blush_sprite);
     free(cry_sprite);
     free(dark_sunglasses_sprite);
@@ -499,14 +509,6 @@ int main(void)
     gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
-
-    /* SETUP MAIN LOGIN SPRITES */
-    globe_sprite = gfx_MallocSprite(globe_width, globe_height);
-    bridge_sprite = gfx_MallocSprite(bridge_width, bridge_height);
-    key_sprite = gfx_MallocSprite(key_width, bridge_height);
-    zx0_Decompress(bridge_sprite, bridge_compressed);
-    zx0_Decompress(globe_sprite, globe_compressed);
-    zx0_Decompress(key_sprite, key_compressed);
 
     /* CALC ID DISPLAY BOTTOM RIGHT */
     char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
@@ -1021,10 +1023,6 @@ void TINETChatScreen()
         const char *sequence;
         gfx_sprite_t *sprite;
     } EmojiSpriteEntry;
-
-    /* SETUP CHAT SPRITES */
-    keyboard_sprite = gfx_MallocSprite(keyboard_width, keyboard_height);
-    zx0_Decompress(keyboard_sprite, keyboard_compressed);
 
     EmojiSpriteEntry emojiSpriteTable[] = {
         {":kb:", keyboard_sprite}, // pointer to emoji
