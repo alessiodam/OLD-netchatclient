@@ -4,9 +4,9 @@
 
 Latest version ALWAYS supports security updates
 
-| Version | Supported          |
-| ------- | ------------------ |
-| latest  | :white_check_mark: |
+| Version | Supported |
+| ------- | --------- |
+| latest  | ✅ |
 
 ## Reporting a Vulnerability
 
