@@ -402,11 +402,12 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton)
 /* DEFINE CHAT */
 void printWrappedText(const char *text, int x, int y);
 void displayMessages();
-void addMessage(const char *recipient, const char *message, int posY);
+void addMessage(const char *message, int posY);
 
 typedef struct
 {
     char recipient[19];
+    int timestamp;
     char message[64];
     int posY;
 } ChatMessage;
@@ -843,7 +844,6 @@ void readSRL()
 
         if (startsWith(in_buffer, "RTC_CHAT:"))
         {
-            char *recipient = in_buffer;
             char *messageContent = strstr(in_buffer, ":");
             
             if (messageContent)
@@ -853,7 +853,7 @@ void readSRL()
                 {
                     messageContent++;
                     messageContent++;
-                    addMessage(recipient, messageContent, 200 + messageCount * 15);
+                    addMessage(messageContent, 200 + messageCount * 15);
                     displayMessages();
                 }
             }
@@ -1212,7 +1212,7 @@ void displayMessages()
     }
 }
 
-void addMessage(const char *recipient, const char *message, int posY)
+void addMessage(const char *message, int posY)
 {
     if (messageCount >= MAX_MESSAGES)
     {
@@ -1228,13 +1228,13 @@ void addMessage(const char *recipient, const char *message, int posY)
     }
 
     ChatMessage newMessage;
-    strncpy(newMessage.recipient, recipient, sizeof(newMessage.recipient) - 1);
     strncpy(newMessage.message, message, sizeof(newMessage.message) - 1);
     newMessage.recipient[sizeof(newMessage.recipient) - 1] = '\0';
     newMessage.message[sizeof(newMessage.message) - 1] = '\0';
     newMessage.posY = posY;
     messageList[messageCount] = newMessage;
     messageCount++;
+    printf("%s", newMessage.recipient);
 }
 
 void updateCaseBox(bool isUppercase)
