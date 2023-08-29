@@ -1052,7 +1052,7 @@ void TINETChatScreen()
         gfx_SetColor(25);
         gfx_FillRectangle(0, 190, 320, 50);
 
-        char output_buffer[41] = "RTC_CHAT:";
+        char output_buffer[48] = "RTC_CHAT:global:";
 
         do
         {
