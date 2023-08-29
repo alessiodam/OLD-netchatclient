@@ -143,7 +143,8 @@ gfx_sprite_t *wink_sprite;
 gfx_sprite_t *yum_sprite;
 gfx_sprite_t *zipper_mouth_sprite;
 
-void load_sprites() {
+void load_sprites()
+{
     globe_sprite = gfx_MallocSprite(globe_width, globe_height);
     key_sprite = gfx_MallocSprite(key_width, key_height);
     bridge_sprite = gfx_MallocSprite(bridge_width, bridge_height);
@@ -186,7 +187,8 @@ void load_sprites() {
     zipper_mouth_sprite = gfx_MallocSprite(zipper_mouth_width, zipper_mouth_height);
 }
 
-void decompress_sprites() {
+void decompress_sprites()
+{
     zx0_Decompress(globe_sprite, globe_compressed);
     zx0_Decompress(key_sprite, key_compressed);
     zx0_Decompress(bridge_sprite, bridge_compressed);
@@ -229,7 +231,8 @@ void decompress_sprites() {
     zx0_Decompress(zipper_mouth_sprite, zipper_mouth_compressed);
 }
 
-void release_sprites() {
+void release_sprites()
+{
     free(globe_sprite);
     free(key_sprite);
     free(bridge_sprite);
@@ -295,15 +298,18 @@ void SendSerial(const char *message)
 bool kb_Update()
 {
     // Update previous input state
-    for (uint8_t i = 0; i <= 7; i++) {
+    for (uint8_t i = 0; i <= 7; i++)
+    {
         previous_kb_Data[i] = kb_Data[i];
     }
-    
+
     kb_Scan();
 
     // Determine whether input has changed
-    for (uint8_t i = 0; i <= 7; i++) {
-        if (previous_kb_Data[i] != kb_Data[i]) {
+    for (uint8_t i = 0; i <= 7; i++)
+    {
+        if (previous_kb_Data[i] != kb_Data[i])
+        {
             return true;
         }
     }
@@ -396,10 +402,11 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton)
 /* DEFINE CHAT */
 void printWrappedText(const char *text, int x, int y);
 void displayMessages();
-void addMessage(const char *message, int posY);
+void addMessage(const char *recipient, const char *message, int posY);
 
 typedef struct
 {
+    char recipient[19];
     char message[64];
     int posY;
 } ChatMessage;
@@ -836,14 +843,17 @@ void readSRL()
 
         if (startsWith(in_buffer, "RTC_CHAT:"))
         {
+            char *recipient = in_buffer;
             char *messageContent = strstr(in_buffer, ":");
+            
             if (messageContent)
             {
                 messageContent = strstr(messageContent + 1, ":");
                 if (messageContent)
                 {
                     messageContent++;
-                    addMessage(messageContent, 200 + messageCount * 15);
+                    messageContent++;
+                    addMessage(recipient, messageContent, 200 + messageCount * 15);
                     displayMessages();
                 }
             }
@@ -1202,13 +1212,15 @@ void displayMessages()
     }
 }
 
-void addMessage(const char *message, int posY)
+void addMessage(const char *recipient, const char *message, int posY)
 {
     if (messageCount >= MAX_MESSAGES)
     {
         for (int i = 0; i < messageCount - 1; i++)
         {
+            strncpy(messageList[i].recipient, messageList[i + 1].recipient, sizeof(messageList[i].recipient) - 1);
             strncpy(messageList[i].message, messageList[i + 1].message, sizeof(messageList[i].message) - 1);
+            messageList[i].recipient[sizeof(messageList[i].recipient) - 1] = '\0';
             messageList[i].message[sizeof(messageList[i].message) - 1] = '\0';
             messageList[i].posY = messageList[i + 1].posY;
         }
@@ -1216,7 +1228,9 @@ void addMessage(const char *message, int posY)
     }
 
     ChatMessage newMessage;
+    strncpy(newMessage.recipient, recipient, sizeof(newMessage.recipient) - 1);
     strncpy(newMessage.message, message, sizeof(newMessage.message) - 1);
+    newMessage.recipient[sizeof(newMessage.recipient) - 1] = '\0';
     newMessage.message[sizeof(newMessage.message) - 1] = '\0';
     newMessage.posY = posY;
     messageList[messageCount] = newMessage;
