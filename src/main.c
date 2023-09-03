@@ -1182,7 +1182,7 @@ void displayMessages()
     {
         char* message = messageList[i].message;
         int messageLength = strlen(message);
-        char buffer[100];
+        char buffer[300];
         buffer[0] = '\0';
         int lineWidth = 0;
 
