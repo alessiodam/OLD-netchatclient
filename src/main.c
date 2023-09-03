@@ -29,7 +29,6 @@
 #include <tice.h>
 #include <debug.h>
 #include <stdbool.h>
-#include <tice.h>
 #include <ti/info.h>
 #include <stdint.h>
 
@@ -38,7 +37,7 @@
 #include "ui/shapes.h"
 
 #define MAX_MESSAGES 15
-#define MAX_LINE_LENGTH (GFX_LCD_WIDTH - 40)
+#define MAX_LINE_LENGTH 260
 
 const system_info_t *systemInfo;
 
@@ -353,9 +352,10 @@ void BucketsButtonPressed()
 }
 
 Button dashboardButtons[] = {
-    {50, 60, 120, 30, "Account Info", accountInfoButtonPressed},
+    // {50, 60, 120, 30, "Account Info", accountInfoButtonPressed},
     {50, 100, 120, 30, "TINET Chat", TINETChatScreen},
-    {50, 140, 120, 30, "Buckets", BucketsButtonPressed}};
+    // {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
+};
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
 
 void loginButtonPressed()
@@ -1023,6 +1023,7 @@ void TINETChatScreen()
     const char *lowercasechars = "\0\0\0\0\0\0\0\0\0\0\"wrmh\0\0?[vqlg\0\0:zupkfc\0 ytojeb\0\0xsnida\0\0\0\0\0\0\0\0";
     uint8_t key, i = 0;
     int textX = 10;
+    int textY = 195;
     inside_RTC_chat = true;
     bool need_to_send = true;
     bool uppercase = false;
@@ -1074,10 +1075,17 @@ void TINETChatScreen()
 
                 if (typedChar && key != 0)
                 {
-                    gfx_SetTextScale(2, 2);
-                    gfx_PrintStringXY(&typedChar, textX, 220);
+                    // printf("%s\n\n", &typedChar);
+                    // printf("%c\n", typedChar);
                     gfx_SetTextScale(1, 1);
-                    textX += gfx_GetStringWidth(&typedChar) * 2;
+                    if (textX + gfx_GetCharWidth(typedChar) > MAX_LINE_LENGTH)
+                    {
+                        textX = 10;
+                        textY = textY + 10;
+                    }
+                    gfx_SetTextXY(textX, textY);
+                    gfx_PrintChar(typedChar);
+                    textX += gfx_GetCharWidth(typedChar);
                     buffer[i++] = typedChar;
                 }
             }
@@ -1099,13 +1107,11 @@ void TINETChatScreen()
             {
                 i--;
                 char removedChar = buffer[i];
-                textX -= gfx_GetStringWidth(&removedChar) * 2;
+                textX -= gfx_GetCharWidth(removedChar);
                 buffer[i] = '\0';
                 gfx_SetColor(25);
-                gfx_FillRectangle(0, 210, 320, 30);
-                gfx_SetTextScale(2, 2);
-                gfx_PrintStringXY(buffer, 10, 220);
-                gfx_SetTextScale(1, 1);
+                gfx_FillRectangle(0, 190, 320, 50);
+                gfx_PrintStringXY(buffer, 10, textY);
             }
 
             usb_HandleEvents();
@@ -1155,7 +1161,8 @@ void TINETChatScreen()
             msleep(100);
             gfx_SetColor(25);
             gfx_FillRectangle(0, 210, 320, 30);
-            textX = 20;
+            textX = 10;
+            textY = 195;
             need_to_send = false;
         }
     }
@@ -1164,51 +1171,43 @@ void TINETChatScreen()
     free(keyboard_sprite);
 }
 
-/*
-void displayMessages()
-{
-    gfx_SetTextScale(1, 1);
-    int yOffset = 60;
-    int maxTextWidth = 290;
-    int lineHeight = 10;
-
-    for (int i = 0; i < messageCount; i++)
-    {
-        const char *message = messageList[i].message;
-        int messageLength = strlen(message);
-        int xPos = 20;
-        int j = 0;
-
-        while (j < messageLength)
-        {
-            int substringWidth = gfx_GetStringWidth(&message[j]);
-
-            if (xPos + substringWidth <= maxTextWidth)
-            {
-                gfx_PrintStringXY(&message[j], xPos, yOffset);
-                xPos += substringWidth;
-                j++;
-            }
-            else
-            {
-                yOffset += lineHeight;
-                xPos = 20;
-            }
-        }
-        yOffset += lineHeight;
-    }
-}
-*/
-
 void displayMessages()
 {
     gfx_SetTextScale(1, 1);
     gfx_SetTextFGColor(255);
     int yOffset = 25;
+    gfx_SetColor(0);
+    gfx_FillRectangle(0, 20, GFX_LCD_WIDTH, 170);
     for (int i = 0; i < messageCount; i++)
     {
-        gfx_PrintStringXY(messageList[i].message, 10, yOffset);
-        yOffset += 10;
+        char* message = messageList[i].message;
+        int messageLength = strlen(message);
+        char buffer[100];
+        buffer[0] = '\0';
+        int lineWidth = 0;
+
+        for (int j = 0; j < messageLength; j++)
+        {
+            char toAdd[2];
+            sprintf(toAdd, "%c", message[j]);
+            strcat(buffer, toAdd);
+            
+            int potentialLineWidth = gfx_GetStringWidth(buffer);
+            
+            if (potentialLineWidth > MAX_LINE_LENGTH)
+            {
+                gfx_PrintStringXY(buffer, 10 + lineWidth, yOffset);
+                yOffset += 10;
+                lineWidth = 0;
+                buffer[0] = '\0';
+            }
+        }
+
+        if (buffer[0] != '\0') 
+        {
+            gfx_PrintStringXY(buffer, 10, yOffset);
+            yOffset += 20;
+        }
     }
 }
 
@@ -1234,7 +1233,6 @@ void addMessage(const char *message, int posY)
     newMessage.posY = posY;
     messageList[messageCount] = newMessage;
     messageCount++;
-    printf("%s", newMessage.recipient);
 }
 
 void updateCaseBox(bool isUppercase)
