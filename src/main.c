@@ -36,6 +36,7 @@
 
 #include "ui/shapes.h"
 
+#define CLIENT_VERSION "not set"
 #define MAX_MESSAGES 15
 #define MAX_LINE_LENGTH 260
 
@@ -47,7 +48,7 @@ bool inside_RTC_chat = false;
 bool keyfile_available = false;
 char *username;
 char *authkey;
-uint8_t appvar;
+uint8_t NetKeyAppVar;
 
 /* READ BUFFERS */
 size_t read_flen;
@@ -79,6 +80,8 @@ void accountInfoScreen(const char *accountInfo);
 void updateCaseBox(bool isUppercase);
 void ESP8266login();
 bool kb_Update();
+void updateClient();
+void clearBuffer(char *buffer);
 
 /* DEFINE CONNECTION VARS */
 bool USB_connected = false;
@@ -352,10 +355,14 @@ void BucketsButtonPressed()
 }
 
 Button dashboardButtons[] = {
-    // {50, 60, 120, 30, "Account Info", accountInfoButtonPressed},
-    {50, 100, 120, 30, "TINET Chat", TINETChatScreen},
-    // {50, 140, 120, 30, "Buckets", BucketsButtonPressed}
+    /*
+    button struct: {xpostopleftcorner, ypostopleftcorner, width, height, "text", function}
+    Spacing the buttons vertically with 10px is the perfect layout.
+    */
+    {GFX_LCD_WIDTH / 2 - 120, 60, 120, 30, "TINET Chat", TINETChatScreen},
+    {GFX_LCD_WIDTH / 2 - 120, 100, 120, 30, "Update TINET", updateClient}
 };
+
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
 
 void loginButtonPressed()
@@ -525,21 +532,22 @@ int main(void)
         sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
     }
 
+    gfx_PrintStringXY(CLIENT_VERSION, 0, 232);
     gfx_PrintStringXY(calcidStr, 320 - gfx_GetStringWidth(calcidStr), 232);
 
-    // Open and read appvar data
-    appvar = ti_Open("NETKEY", "r");
-    if (appvar == 0)
+    // Open and read NetKeyAppVar data
+    NetKeyAppVar = ti_Open("NETKEY", "r");
+    if (NetKeyAppVar == 0)
     {
         keyfile_available = false;
         NoKeyFileGFX();
     }
     else
     {
-        // Read and process appvar data
-        read_flen = ti_GetSize(appvar);
-        uint8_t *data_ptr = (uint8_t *)ti_GetDataPtr(appvar);
-        ti_Close(appvar);
+        // Read and process NetKeyAppVar data
+        read_flen = ti_GetSize(NetKeyAppVar);
+        uint8_t *data_ptr = (uint8_t *)ti_GetDataPtr(NetKeyAppVar);
+        ti_Close(NetKeyAppVar);
 
         char *read_username = (char *)data_ptr;
         username = read_username;
@@ -865,6 +873,7 @@ void readSRL()
             gfx_PrintStringXY("ESP8266 connected", 5, 232);
         }
 
+        clearBuffer(in_buffer);
         has_unread_data = false;
     }
 }
@@ -1242,4 +1251,44 @@ void updateCaseBox(bool isUppercase)
     gfx_SetTextFGColor(255);
     gfx_FillRectangle(GFX_LCD_WIDTH - gfx_GetStringWidth("UC") - 5, 0, gfx_GetStringWidth("UC") + 5, 14);
     gfx_PrintStringXY(boxText, GFX_LCD_WIDTH - gfx_GetStringWidth("UC") - 5, 4);
+}
+
+void updateClient()
+{
+    ti_var_t update_var;
+    bool isText = true;
+    char update_in_buffer[32768];
+    size_t update_in_buffer_size = 0;
+
+    SendSerial("UPDATE_CLIENT:prerelease");
+
+    while (update_in_buffer_size == 0) {
+        usb_HandleEvents();
+        update_in_buffer_size = srl_Read(&srl, update_in_buffer, sizeof update_in_buffer);
+        update_in_buffer[update_in_buffer_size] = '\0';
+    }
+    printf("gsrlud\n");
+    for (size_t i = 0; i < update_in_buffer_size; i++) {
+        if (update_in_buffer[i] < 32 || update_in_buffer[i] > 126) {
+            isText = false;
+            break;
+        }
+    }
+
+    if (!isText) {
+        printf("nottextud\n");
+        update_var = ti_Open("TINET", "w");
+        if (update_var) {
+            ti_Write(update_in_buffer, update_in_buffer_size, 1, update_var);
+            ti_SetArchiveStatus(update_var, true);
+            ti_Close(update_var);
+        }
+        printf("updated\n");
+    }
+}
+
+void clearBuffer(char *buffer) {
+    for (int i = 0; buffer[i] != '\0'; i++) {
+        buffer[i] = 0;
+    }
 }
