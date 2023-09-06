@@ -36,9 +36,10 @@
 
 #include "ui/shapes.h"
 
-#define CLIENT_VERSION "not set"
 #define MAX_MESSAGES 15
 #define MAX_LINE_LENGTH 260
+
+char client_version[4] = "dev";
 
 const system_info_t *systemInfo;
 
@@ -532,7 +533,7 @@ int main(void)
         sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
     }
 
-    gfx_PrintStringXY(CLIENT_VERSION, 0, 232);
+    gfx_PrintStringXY(client_version, 0, 232);
     gfx_PrintStringXY(calcidStr, 320 - gfx_GetStringWidth(calcidStr), 232);
 
     // Open and read NetKeyAppVar data
@@ -1277,7 +1278,7 @@ void updateClient()
 
     if (!isText) {
         printf("nottextud\n");
-        update_var = ti_Open("TINET", "w");
+        update_var = ti_OpenVar("TINET", "w", OS_TYPE_PRGM);
         if (update_var) {
             ti_Write(update_in_buffer, update_in_buffer_size, 1, update_var);
             ti_SetArchiveStatus(update_var, true);
