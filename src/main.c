@@ -1258,34 +1258,50 @@ void updateClient()
 {
     ti_var_t update_var;
     bool isText = true;
-    char update_in_buffer[32768];
+    char update_in_buffer[512];
     size_t update_in_buffer_size = 0;
 
+    printf("uds1\n");
     SendSerial("UPDATE_CLIENT:prerelease");
 
-    while (update_in_buffer_size == 0) {
-        usb_HandleEvents();
-        update_in_buffer_size = srl_Read(&srl, update_in_buffer, sizeof update_in_buffer);
-        update_in_buffer[update_in_buffer_size] = '\0';
-    }
-    printf("gsrlud\n");
-    for (size_t i = 0; i < update_in_buffer_size; i++) {
-        if (update_in_buffer[i] < 32 || update_in_buffer[i] > 126) {
-            isText = false;
-            break;
-        }
+    printf("uds2\n");
+    update_var = ti_OpenVar("NETNEW", "w", OS_TYPE_PRGM);
+    if (!update_var) {
+        printf("Failed to open variable\n");
+        return;
     }
 
-    if (!isText) {
-        printf("nottextud\n");
-        update_var = ti_OpenVar("TINET", "w", OS_TYPE_PRGM);
-        if (update_var) {
-            ti_Write(update_in_buffer, update_in_buffer_size, 1, update_var);
-            ti_SetArchiveStatus(update_var, true);
-            ti_Close(update_var);
+    while (true) {
+        usb_HandleEvents();
+        update_in_buffer_size = srl_Read(&srl, update_in_buffer, sizeof update_in_buffer);
+
+        if (update_in_buffer_size == 0) {
+            continue;
         }
-        printf("updated\n");
+
+        if (strncmp(update_in_buffer, "UPDATE_DONE", 11) == 0) {
+            break;
+        }
+
+        printf("uds3\n");
+        for (size_t i = 0; i < update_in_buffer_size; i++) {
+            if (update_in_buffer[i] < 32 || update_in_buffer[i] > 126) {
+                isText = false;
+                break;
+            }
+        }
+
+        if (!isText) {
+            printf("udsa\n");
+            ti_Write(update_in_buffer, update_in_buffer_size, 512, update_var);
+            printf("written\n");
+            SendSerial("UPDATE_CONTINUE");
+        }
     }
+    printf("updated");
+
+    ti_SetArchiveStatus(update_var, true);
+    ti_Close(update_var);
 }
 
 void clearBuffer(char *buffer) {
