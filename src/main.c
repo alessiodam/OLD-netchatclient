@@ -1262,7 +1262,7 @@ void updateClient()
     size_t update_in_buffer_size = 0;
 
     printf("uds1\n");
-    SendSerial("UPDATE_CLIENT:prerelease");
+    SendSerial("UPDATE_CLIENT:dev");
 
     printf("uds2\n");
     update_var = ti_OpenVar("NETNEW", "w", OS_TYPE_PRGM);
