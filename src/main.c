@@ -730,7 +730,7 @@ void KeyFileAvailableGFX()
     snprintf(display_str, sizeof(display_str), "Username: %s", username);
     gfx_PrintStringXY(display_str, ((GFX_LCD_WIDTH - gfx_GetStringWidth(display_str)) / 2), 135);
 
-    gfx_PrintStringXY("Press [enter] to connect!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [enter] to connect!")) / 2), 65);
+    gfx_PrintStringXY("Waiting for bridge..", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Waiting for bridge..")) / 2), 65);
 }
 
 void NoKeyFileGFX()
@@ -791,6 +791,8 @@ void readSRL()
             gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
             gfx_SetColor(0);
             gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 110);
+            gfx_FillRectangle(0, 65, GFX_LCD_WIDTH, 12);
+            gfx_PrintStringXY("Press [enter] to connect!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [enter] to connect!")) / 2), 65);
         }
         if (strcmp(in_buffer, "internetDisconnected") == 0)
         {
