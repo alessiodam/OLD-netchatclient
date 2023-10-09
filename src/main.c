@@ -1103,7 +1103,6 @@ void displayMessages()
         int messageLength = strlen(message);
         char buffer[300];
         buffer[0] = '\0';
-        int lineWidth = 0;
 
         for (int j = 0; j < messageLength; j++)
         {
@@ -1115,9 +1114,8 @@ void displayMessages()
             
             if (currentLineWidth > MAX_CHAT_LINE_LENGTH)
             {
-                gfx_PrintStringXY(buffer, 10 + lineWidth, yOffset);
+                gfx_PrintStringXY(buffer, 10, yOffset);
                 yOffset += 10;
-                lineWidth = 0;
                 buffer[0] = '\0';
             }
         }
