@@ -36,8 +36,8 @@
 
 #include "ui/shapes.h"
 
-#define MAX_MESSAGES 15
-#define MAX_LINE_LENGTH 260
+#define MAX_CHAT_MESSAGES 15
+#define MAX_CHAT_LINE_LENGTH 260
 
 char client_version[4] = "dev";
 
@@ -54,7 +54,7 @@ uint8_t NetKeyAppVar;
 /* READ BUFFERS */
 size_t read_flen;
 uint8_t *ptr;
-char in_buffer[32768];
+char in_buffer[8192];
 
 /* DEFINE FUNCTIONS */
 void GFXspritesInit();
@@ -65,21 +65,15 @@ void FreeMemory();
 void quitProgram();
 void login();
 void readSRL();
-void sendSerialInitData();
-void getCurrentTime();
-void printServerPing();
 void dashboardScreen();
 void mailNotVerifiedScreen();
 bool startsWith(const char *str, const char *prefix);
-void displayIP(const char *ipAddress);
 void howToUseScreen();
 void alreadyConnectedScreen();
 void userNotFoundScreen();
-void calcIDneedsUpdateScreen();
 void TINETChatScreen();
 void accountInfoScreen(const char *accountInfo);
 void updateCaseBox(bool isUppercase);
-void ESP8266login();
 bool kb_Update();
 void updateClient();
 void clearBuffer(char *buffer);
@@ -97,7 +91,6 @@ uint8_t srl_buf[512];
 bool serial_init_data_sent = false;
 usb_error_t usb_error;
 const usb_standard_descriptors_t *usb_desc;
-bool is_esp8266 = false;
 
 uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
@@ -146,7 +139,7 @@ gfx_sprite_t *wink_sprite;
 gfx_sprite_t *yum_sprite;
 gfx_sprite_t *zipper_mouth_sprite;
 
-void load_sprites()
+void alloc_sprites()
 {
     globe_sprite = gfx_MallocSprite(globe_width, globe_height);
     key_sprite = gfx_MallocSprite(key_width, key_height);
@@ -234,7 +227,7 @@ void decompress_sprites()
     zx0_Decompress(zipper_mouth_sprite, zipper_mouth_compressed);
 }
 
-void release_sprites()
+void free_sprites()
 {
     free(globe_sprite);
     free(key_sprite);
@@ -333,20 +326,6 @@ void accountInfoButtonPressed()
 {
     msleep(200);
     printf("in dev\n");
-    /*
-    char out_buff_msg[14] = "ACCOUNT_INFO";
-    SendSerial(out_buff_msg);
-    size_t bytes_read;
-
-    do {
-        bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
-        if (bytes_read > 0) {
-            break;
-        }
-    } while (1);
-
-    accountInfoScreen(in_buffer);
-    */
 }
 
 void BucketsButtonPressed()
@@ -371,14 +350,7 @@ void loginButtonPressed()
     if (!USB_connected && !USB_connecting && bridge_connected)
     {
         USB_connecting = true;
-        if (is_esp8266 == true)
-        {
-            login(); // on purpose, the ESP8266 login system is not done currently
-        }
-        else
-        {
-            login();
-        }
+        login();
     }
 }
 
@@ -416,11 +388,11 @@ typedef struct
 {
     char recipient[19];
     int timestamp;
-    char message[64];
+    char message[200];
     int posY;
 } ChatMessage;
 
-ChatMessage messageList[MAX_MESSAGES];
+ChatMessage messageList[MAX_CHAT_MESSAGES];
 int messageCount = 0;
 
 /* DEFINE DATETIME */
@@ -514,7 +486,7 @@ int main(void)
     GFXsettings();
 
     // load sprites
-    load_sprites();
+    alloc_sprites();
     decompress_sprites();
 
     // Display main menu
@@ -588,7 +560,8 @@ int main(void)
 
         if (has_srl_device && bridge_connected && !serial_init_data_sent)
         {
-            sendSerialInitData();
+            SendSerial("SERIAL_CONNECTED");
+            serial_init_data_sent = true;
         }
 
         if (kb_Data[7] == kb_Down && previous_kb_Data[7] != kb_Down)
@@ -757,7 +730,6 @@ void readSRL()
 
     if (bytes_read < 0)
     {
-        // has_srl_device = false;
         printf("SRL 0B");
     }
     else if (bytes_read > 0)
@@ -765,7 +737,6 @@ void readSRL()
         in_buffer[bytes_read] = '\0';
         has_unread_data = true;
 
-        /* BRIDGE CONNECTED GFX */
         if (strcmp(in_buffer, "bridgeConnected") == 0)
         {
             bridge_connected = true;
@@ -783,7 +754,6 @@ void readSRL()
             gfx_PrintStringXY("Bridge disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80);
         }
 
-        /* Internet Connected GFX */
         if (strcmp(in_buffer, "SERIAL_CONNECTED_CONFIRMED_BY_SERVER") == 0)
         {
             internet_connected = true;
@@ -835,7 +805,7 @@ void readSRL()
 
         if (strcmp(in_buffer, "CALC_BANNED") == 0)
         {
-            printf("You're\nbanned.");
+            printf("Your calc\nis banned.");
         }
 
         if (startsWith(in_buffer, "ACCOUNT_INFO:"))
@@ -846,34 +816,27 @@ void readSRL()
 
         if (startsWith(in_buffer, "YOUR_IP:"))
         {
-            displayIP(in_buffer + strlen("YOUR_IP:"));
-        }
-        if (startsWith(in_buffer, "CALC_ID_UPDATE_NEEDED"))
-        {
-            calcIDneedsUpdateScreen();
+            printf("Received IP address: %s\n", in_buffer + strlen("YOUR_IP:"));
         }
 
         if (startsWith(in_buffer, "RTC_CHAT:"))
         {
-            char *messageContent = strstr(in_buffer, ":");
-            
-            if (messageContent)
+            if (inside_RTC_chat)
             {
-                messageContent = strstr(messageContent + 1, ":");
+                char *messageContent = strstr(in_buffer, ":");
+                
                 if (messageContent)
                 {
-                    messageContent++;
-                    messageContent++;
-                    addMessage(messageContent, 200 + messageCount * 15);
-                    displayMessages();
+                    messageContent = strstr(messageContent + 1, ":");
+                    if (messageContent)
+                    {
+                        messageContent++;
+                        messageContent++;
+                        addMessage(messageContent, 200 + messageCount * 15);
+                        displayMessages();
+                    }
                 }
             }
-        }
-
-        if (strcmp(in_buffer, "ESP8266") == 0)
-        {
-            is_esp8266 = true;
-            gfx_PrintStringXY("ESP8266 connected", 5, 232);
         }
 
         clearBuffer(in_buffer);
@@ -881,29 +844,16 @@ void readSRL()
     }
 }
 
-void sendSerialInitData()
-{
-    serial_init_data_sent = true;
-    char init_serial_connected_text_buffer[17] = "SERIAL_CONNECTED";
-    SendSerial(init_serial_connected_text_buffer);
-}
-
 void quitProgram()
 {
     gfx_End();
     usb_Cleanup();
-    // GFXspritesFree();
     exit(0);
 }
 
 bool startsWith(const char *str, const char *prefix)
 {
     return strncmp(str, prefix, strlen(prefix)) == 0;
-}
-
-void displayIP(const char *ipAddress)
-{
-    printf("Received IP address: %s\n", ipAddress);
 }
 
 void howToUseScreen()
@@ -986,49 +936,6 @@ void userNotFoundScreen()
     } while (1);
 }
 
-void calcIDneedsUpdateScreen()
-{
-    gfx_ZeroScreen();
-    gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("ID UPDATE", ((GFX_LCD_WIDTH - gfx_GetStringWidth("ID UPDATE")) / 2), 5);
-    gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("calc ID update", (GFX_LCD_WIDTH - gfx_GetStringWidth("calc ID update")) / 2, 35);
-    gfx_SetTextScale(1, 1);
-    gfx_PrintStringXY("update it on https://tinet.tkbstudios.com/dashboard", (GFX_LCD_WIDTH - gfx_GetStringWidth("update it on https://tinet.tkbstudios.com/dashboard")) / 2, 50);
-
-    if (systemInfo != NULL)
-    {
-        gfx_PrintStringXY("calcid: ", 10, 70);
-
-        char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
-        for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++)
-        {
-            sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
-        }
-        gfx_PrintStringXY(calcidStr, 10 + gfx_GetStringWidth("calcid: "), 70);
-    }
-    else
-    {
-        gfx_SetTextScale(2, 2);
-        gfx_PrintStringXY("Failed to get system info!", (GFX_LCD_WIDTH - gfx_GetStringWidth("Failed to get system info!")) / 2, GFX_LCD_HEIGHT / 2);
-    }
-    do
-    {
-        kb_Update();
-
-        usb_HandleEvents();
-        if (has_srl_device)
-        {
-            readSRL();
-        }
-
-        if (kb_Data[6] == kb_Clear)
-        {
-            break;
-        }
-    } while (1);
-}
-
 void TINETChatScreen()
 {
     const char *uppercasechars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
@@ -1090,7 +997,7 @@ void TINETChatScreen()
                     // printf("%s\n\n", &typedChar);
                     // printf("%c\n", typedChar);
                     gfx_SetTextScale(1, 1);
-                    if (textX + gfx_GetCharWidth(typedChar) > MAX_LINE_LENGTH)
+                    if (textX + gfx_GetCharWidth(typedChar) > MAX_CHAT_LINE_LENGTH)
                     {
                         textX = 10;
                         textY = textY + 10;
@@ -1204,9 +1111,9 @@ void displayMessages()
             sprintf(toAdd, "%c", message[j]);
             strcat(buffer, toAdd);
             
-            int potentialLineWidth = gfx_GetStringWidth(buffer);
+            int currentLineWidth = gfx_GetStringWidth(buffer);
             
-            if (potentialLineWidth > MAX_LINE_LENGTH)
+            if (currentLineWidth > MAX_CHAT_LINE_LENGTH)
             {
                 gfx_PrintStringXY(buffer, 10 + lineWidth, yOffset);
                 yOffset += 10;
@@ -1225,7 +1132,7 @@ void displayMessages()
 
 void addMessage(const char *message, int posY)
 {
-    if (messageCount >= MAX_MESSAGES)
+    if (messageCount >= MAX_CHAT_MESSAGES)
     {
         for (int i = 0; i < messageCount - 1; i++)
         {
