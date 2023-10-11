@@ -350,7 +350,7 @@ Button dashboardButtons[] = {
     */
     {27, 42, 120, 30, "TINET Chat", TINETChatScreen},
     {27, 76, 120, 30, "Update TINET", updateClient},
-    {27, 111, 120, 30, "Set Time", SetTime}
+    {27, 110, 120, 30, "Set Time", SetTime}
 };
 
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
@@ -669,13 +669,12 @@ void dashboardScreen()
     gfx_SetTextScale(1, 1);
     //gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);//
     gfx_SetTextFGColor(255);
-
-    int centerX = (GFX_LCD_WIDTH - gfx_GetStringWidth("Logged in as ")) / 2;
-
-    gfx_PrintStringXY("Logged in as ", centerX - gfx_GetStringWidth("Logged in as "), 45);
-
-    gfx_PrintStringXY(username, centerX, 45);
-
+    //int centerX = (GFX_LCD_WIDTH - gfx_GetStringWidth("Logged in as ")) / 2;//
+    //gfx_PrintStringXY("Logged in as ", centerX - gfx_GetStringWidth("Logged in as "), 45);//
+    shapes_RoundRectangleFill(57, 20, 114, 171, 194, 35);
+    shapes_RoundRectangleFill(49, 20, 103, 69, 198, 72);
+    /*This shape doesnt want to draw properly*/
+    //shapes_RoundRectangleFill(49, 20, 74, 14, 227, 50);//
     int selectedButton = 0;
     drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
 
