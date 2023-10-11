@@ -709,13 +709,14 @@ void GFXsettings()
 
 void KeyFileAvailableGFX()
 {
-    gfx_PrintStringXY("Keyfile detected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 95);
+    gfx_PrintStringXY("Keyfile detected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 37);
 
     char display_str[64];
-    snprintf(display_str, sizeof(display_str), "Username: %s", username);
-    gfx_PrintStringXY(display_str, ((GFX_LCD_WIDTH - gfx_GetStringWidth(display_str)) / 2), 135);
-
-    gfx_PrintStringXY("Waiting for bridge..", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Waiting for bridge..")) / 2), 65);
+    snprintf(display_str, sizeof(display_str), "%s", username);
+    gfx_SetTextScale(1, 2);
+    gfx_PrintStringXY(display_str, ((GFX_LCD_WIDTH - gfx_GetStringWidth(display_str)) / 2), 95);
+    gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("Waiting for bridge..", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Waiting for bridge..")) / 2), 27);
 }
 
 void NoKeyFileGFX()
