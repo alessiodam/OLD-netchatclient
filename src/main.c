@@ -875,14 +875,17 @@ void howToUseScreen()
     free(key_sprite);
 
     gfx_ZeroScreen();
+    gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 23);
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("How To TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("How To TINET")) / 2), 5);
+    gfx_SetTextScale(1, 1);
+    shapes_RoundRectangleFill(49, 20, 284, 165, 18, 38);
     gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
+    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 45);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
-
-    gfx_PrintStringXY("https://tinet.tkbstudios.com/", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/")) / 2, GFX_LCD_HEIGHT / 2);
+    gfx_PrintStringXY("Please visit", (GFX_LCD_WIDTH - gfx_GetStringWidth("Please visit")) / 2, GFX_LCD_HEIGHT / 2 - 10);
+    gfx_PrintStringXY("https://tinetdocs.tkbstudios.com/", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinetdocs.tkbstudios.com/")) / 2, GFX_LCD_HEIGHT / 2);
 
     do
     {
