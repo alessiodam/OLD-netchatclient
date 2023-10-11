@@ -348,9 +348,9 @@ Button dashboardButtons[] = {
     button struct: {xpostopleftcorner, ypostopleftcorner, width, height, "text", function}
     Spacing the buttons vertically with 10px is the perfect layout.
     */
-    {25, 42, 120, 30, "TINET Chat", TINETChatScreen},
-    {25, 76, 120, 30, "Update TINET", updateClient},
-    {25, 111, 120, 30, "Set Time", SetTime}
+    {27, 42, 120, 30, "TINET Chat", TINETChatScreen},
+    {27, 76, 120, 30, "Update TINET", updateClient},
+    {27, 111, 120, 30, "Set Time", SetTime}
 };
 
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
