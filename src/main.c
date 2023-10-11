@@ -335,13 +335,22 @@ void BucketsButtonPressed()
     msleep(500);
 }
 
+void SetTime()
+{
+    gfx_End();
+    usb_Cleanup();
+    exit(0);
+}
+
+
 Button dashboardButtons[] = {
     /*
     button struct: {xpostopleftcorner, ypostopleftcorner, width, height, "text", function}
     Spacing the buttons vertically with 10px is the perfect layout.
     */
-    {GFX_LCD_WIDTH / 2 - 120, 60, 120, 30, "TINET Chat", TINETChatScreen},
-    {GFX_LCD_WIDTH / 2 - 120, 100, 120, 30, "Update TINET", updateClient}
+    {25, 42, 120, 30, "TINET Chat", TINETChatScreen},
+    {25, 76, 120, 30, "Update TINET", updateClient},
+    {25, 111, 120, 30, "Set Time", SetTime}
 };
 
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
@@ -651,11 +660,14 @@ void accountInfoScreen(const char *accountInfo)
 void dashboardScreen()
 {
     gfx_ZeroScreen();
+    gfx_SetColor(57);
+    gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 23);
+    shapes_RoundRectangleFill(57, 20, 152, 208, 15, 27);
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
+    gfx_PrintStringXY("Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Dashboard")) / 2), 5);
     gfx_SetTextFGColor(224);
     gfx_SetTextScale(1, 1);
-    gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
+    //gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);//
     gfx_SetTextFGColor(255);
 
     int centerX = (GFX_LCD_WIDTH - gfx_GetStringWidth("Logged in as ")) / 2;
@@ -943,6 +955,7 @@ void userNotFoundScreen()
         }
     } while (1);
 }
+
 
 void TINETChatScreen()
 {
