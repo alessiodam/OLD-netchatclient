@@ -494,11 +494,11 @@ int main(void)
     gfx_ZeroScreen();
     gfx_SetTextScale(1, 2);
     gfx_SetColor(49);
-    shapes_RoundRectangleFill(16, 20, 147, 165, 87, 54);
+    shapes_RoundRectangleFill(57, 20, 147, 165, 87, 54);
     shapes_RoundRectangleFill(49, 20, 114, 62, 101, 63);
     gfx_SetTextFGColor(255);
     gfx_PrintStringXY("Username:", (GFX_LCD_WIDTH - gfx_GetStringWidth("Username:")) / 2, 68);
-    gfx_SetColor(16);
+    gfx_SetColor(57);
     gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 23);
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET", (GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2, 5);
@@ -876,7 +876,7 @@ void howToUseScreen()
     free(key_sprite);
 
     gfx_ZeroScreen();
-    gfx_SetColor(16);
+    gfx_SetColor(57);
     gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 23);
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("How To TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("How To TINET")) / 2), 5);
