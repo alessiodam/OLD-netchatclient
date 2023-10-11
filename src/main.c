@@ -875,6 +875,7 @@ void howToUseScreen()
     free(key_sprite);
 
     gfx_ZeroScreen();
+    gfx_SetColor(16);
     gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 23);
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("How To TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("How To TINET")) / 2), 5);
