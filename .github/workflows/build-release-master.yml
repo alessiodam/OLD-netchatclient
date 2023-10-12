@@ -25,7 +25,7 @@ jobs:
 
       - name: Download and extract CEdev
         run: |
-          curl -sL https://github.com/CE-Programming/toolchain/releases/download/nightly/CEdev-Linux-nightly.tar.gz | tar xz
+          curl -sL github.com/CE-Programming/toolchain/releases/download/v11.2/CEdev-Linux.tar.gz | tar xz
       
       - name: Add CEdev to PATH
         run: |
