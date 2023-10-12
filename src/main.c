@@ -13,6 +13,7 @@
  * TIny_Hacker
  * ACagliano (Anthony Cagliano)
  * Powerbyte7
+ * Log4Jake (Invalid_Jake)
  *--------------------------------------
  */
 
@@ -334,13 +335,22 @@ void BucketsButtonPressed()
     msleep(500);
 }
 
+void SetTime()
+{
+    gfx_End();
+    usb_Cleanup();
+    exit(0);
+}
+
+
 Button dashboardButtons[] = {
     /*
     button struct: {xpostopleftcorner, ypostopleftcorner, width, height, "text", function}
     Spacing the buttons vertically with 10px is the perfect layout.
     */
-    {GFX_LCD_WIDTH / 2 - 120, 60, 120, 30, "TINET Chat", TINETChatScreen},
-    {GFX_LCD_WIDTH / 2 - 120, 100, 120, 30, "Update TINET", updateClient}
+    {27, 42, 120, 30, "TINET Chat", TINETChatScreen},
+    {27, 76, 120, 30, "Update TINET", updateClient},
+    {27, 110, 120, 30, "Set Time", SetTime}
 };
 
 int numDashboardButtons = sizeof(dashboardButtons) / sizeof(dashboardButtons[0]);
@@ -356,8 +366,8 @@ void loginButtonPressed()
 
 Button mainMenuButtons[] = {
     // Button properties: X (top left corner), Y (top left corner), width, height, label, function
-    {20, 160, 120, 30, "Login", loginButtonPressed},
-    {20, 200, 120, 30, "How to Use", howToUseScreen}};
+    {103, 130, 114, 30, "Login", loginButtonPressed},
+    {103, 165, 114, 30, "Help", howToUseScreen}};
 
 int numMainMenuButtons = sizeof(mainMenuButtons) / sizeof(mainMenuButtons[0]);
 
@@ -368,13 +378,13 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton)
         if (i == selectedButton)
         {
             shapes_RoundRectangleFill(255, 10, buttons[i].width, buttons[i].height, buttons[i].x, buttons[i].y);
-            shapes_RoundRectangleFill(18, 10, buttons[i].width - 2, buttons[i].height - 2, buttons[i].x + 1, buttons[i].y + 1);
+            shapes_RoundRectangleFill(49, 10, buttons[i].width - 2, buttons[i].height - 2, buttons[i].x + 1, buttons[i].y + 1);
         }
         else
         {
-            shapes_RoundRectangleFill(18, 10, buttons[i].width, buttons[i].height, buttons[i].x, buttons[i].y);
+            shapes_RoundRectangleFill(49, 10, buttons[i].width, buttons[i].height, buttons[i].x, buttons[i].y);
         }
-        gfx_PrintStringXY(buttons[i].label, buttons[i].x + 10, buttons[i].y + 10);
+        gfx_PrintStringXY(buttons[i].label, buttons[i].x + ((buttons[i].width / 2) - (gfx_GetStringWidth(buttons[i].label)) / 2), buttons[i].y + 10);
     }
     msleep(250);
 }
@@ -491,22 +501,33 @@ int main(void)
 
     // Display main menu
     gfx_ZeroScreen();
+    gfx_SetTextScale(1, 2);
+    gfx_SetColor(49);
+    shapes_RoundRectangleFill(57, 20, 147, 165, 87, 54);
+    shapes_RoundRectangleFill(49, 20, 114, 62, 101, 63);
+    gfx_SetTextFGColor(255);
+    gfx_PrintStringXY("Username:", (GFX_LCD_WIDTH - gfx_GetStringWidth("Username:")) / 2, 68);
+    gfx_SetColor(57);
+    gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 23);
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET", (GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2, 5);
-    gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
-    gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
+    gfx_SetTextFGColor(224);
+    //gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
+    gfx_SetTextFGColor(255);
 
-    /* CALC ID DISPLAY BOTTOM RIGHT */
+    /* CREATE CALCID */
     char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
     for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++)
     {
         sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
     }
 
-    gfx_PrintStringXY(client_version, 0, 232);
-    gfx_PrintStringXY(calcidStr, 320 - gfx_GetStringWidth(calcidStr), 232);
+    /* DISPLAY CLIENT VERSION BOTTOM RIGHT */
+    gfx_PrintStringXY(client_version, 320 - gfx_GetStringWidth(client_version), 232);
+
+    /* CALC ID DISPLAY CENTER */
+    gfx_PrintStringXY(calcidStr, (GFX_LCD_WIDTH - gfx_GetStringWidth(calcidStr)) / 2, 205);
 
     // Open and read NetKeyAppVar data
     NetKeyAppVar = ti_Open("NETKEY", "r");
@@ -639,19 +660,21 @@ void accountInfoScreen(const char *accountInfo)
 void dashboardScreen()
 {
     gfx_ZeroScreen();
+    gfx_SetColor(57);
+    gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 23);
+    shapes_RoundRectangleFill(57, 20, 152, 208, 15, 27);
     gfx_SetTextScale(2, 2);
-    gfx_PrintStringXY("TINET Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("TINET Dashboard")) / 2), 5);
+    gfx_PrintStringXY("Dashboard", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Dashboard")) / 2), 5);
     gfx_SetTextFGColor(224);
     gfx_SetTextScale(1, 1);
-    gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);
+    //gfx_PrintStringXY("Press [clear] to quit.", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2), 35);//
     gfx_SetTextFGColor(255);
-
-    int centerX = (GFX_LCD_WIDTH - gfx_GetStringWidth("Logged in as ")) / 2;
-
-    gfx_PrintStringXY("Logged in as ", centerX - gfx_GetStringWidth("Logged in as "), 45);
-
-    gfx_PrintStringXY(username, centerX, 45);
-
+    //int centerX = (GFX_LCD_WIDTH - gfx_GetStringWidth("Logged in as ")) / 2;//
+    //gfx_PrintStringXY("Logged in as ", centerX - gfx_GetStringWidth("Logged in as "), 45);//
+    shapes_RoundRectangleFill(57, 20, 114, 171, 194, 35);
+    shapes_RoundRectangleFill(49, 20, 103, 69, 198, 72);
+    /*This shape doesnt want to draw properly*/
+    //shapes_RoundRectangleFill(49, 20, 74, 14, 227, 50);//
     int selectedButton = 0;
     drawButtons(dashboardButtons, numDashboardButtons, selectedButton);
 
@@ -697,19 +720,20 @@ void GFXsettings()
 
 void KeyFileAvailableGFX()
 {
-    gfx_PrintStringXY("Keyfile detected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 95);
+    gfx_PrintStringXY("Keyfile detected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Keyfile detected!")) / 2), 37);
 
     char display_str[64];
-    snprintf(display_str, sizeof(display_str), "Username: %s", username);
-    gfx_PrintStringXY(display_str, ((GFX_LCD_WIDTH - gfx_GetStringWidth(display_str)) / 2), 135);
-
-    gfx_PrintStringXY("Waiting for bridge..", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Waiting for bridge..")) / 2), 65);
+    snprintf(display_str, sizeof(display_str), "%s", username);
+    gfx_SetTextScale(1, 2);
+    gfx_PrintStringXY(display_str, ((GFX_LCD_WIDTH - gfx_GetStringWidth(display_str)) / 2), 95);
+    gfx_SetTextScale(1, 1);
+    gfx_PrintStringXY("Waiting for bridge..", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Waiting for bridge..")) / 2), 27);
 }
 
 void NoKeyFileGFX()
 {
-    gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
-    gfx_PrintStringXY("https://tinet.tkbstudios.com/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/login")) / 2), 100);
+    //gfx_PrintStringXY("Please first add your keyfile!!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Please first add your keyfile!!")) / 2), 90);
+    //gfx_PrintStringXY("https://tinet.tkbstudios.com/login", ((GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/login")) / 2), 100);
 }
 
 void login()
@@ -741,15 +765,11 @@ void readSRL()
         {
             bridge_connected = true;
             gfx_SetColor(0);
-            gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
-            gfx_SetColor(0);
-            gfx_PrintStringXY("Bridge connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge connected!")) / 2), 80);
+            gfx_PrintStringXY("Bridge connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge connected!")) / 2), 47);
         }
         if (strcmp(in_buffer, "bridgeDisconnected") == 0)
         {
             bridge_connected = false;
-            gfx_SetColor(0);
-            gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80, gfx_GetStringWidth("Bridge disconnected!"), 15);
             gfx_SetColor(0);
             gfx_PrintStringXY("Bridge disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge disconnected!")) / 2), 80);
         }
@@ -758,17 +778,12 @@ void readSRL()
         {
             internet_connected = true;
             gfx_SetColor(0);
-            gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
-            gfx_SetColor(0);
-            gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 110);
-            gfx_FillRectangle(0, 65, GFX_LCD_WIDTH, 12);
-            gfx_PrintStringXY("Press [enter] to connect!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [enter] to connect!")) / 2), 65);
+            gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 57);
+            gfx_PrintStringXY("Press [enter] to connect!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [enter] to connect!")) / 2), 224);
         }
         if (strcmp(in_buffer, "internetDisconnected") == 0)
         {
             internet_connected = false;
-            gfx_SetColor(0);
-            gfx_FillRectangle(((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110, gfx_GetStringWidth("Internet disconnected!"), 15);
             gfx_SetColor(0);
             gfx_PrintStringXY("Internet disconnected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet disconnected!")) / 2), 110);
         }
@@ -863,14 +878,18 @@ void howToUseScreen()
     free(key_sprite);
 
     gfx_ZeroScreen();
+    gfx_SetColor(57);
+    gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 23);
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("How To TINET", ((GFX_LCD_WIDTH - gfx_GetStringWidth("How To TINET")) / 2), 5);
+    gfx_SetTextScale(1, 1);
+    shapes_RoundRectangleFill(49, 20, 284, 165, 18, 38);
     gfx_SetTextFGColor(224);
-    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
+    gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 45);
     gfx_SetTextFGColor(255);
     gfx_SetTextScale(1, 1);
-
-    gfx_PrintStringXY("https://tinet.tkbstudios.com/", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinet.tkbstudios.com/")) / 2, GFX_LCD_HEIGHT / 2);
+    gfx_PrintStringXY("Please visit", (GFX_LCD_WIDTH - gfx_GetStringWidth("Please visit")) / 2, GFX_LCD_HEIGHT / 2 - 10);
+    gfx_PrintStringXY("https://tinetdocs.tkbstudios.com/", (GFX_LCD_WIDTH - gfx_GetStringWidth("https://tinetdocs.tkbstudios.com/")) / 2, GFX_LCD_HEIGHT / 2);
 
     do
     {
@@ -936,6 +955,7 @@ void userNotFoundScreen()
     } while (1);
 }
 
+
 void TINETChatScreen()
 {
     const char *uppercasechars = "\0\0\0\0\0\0\0\0\0\0\"WRMH\0\0?[VQLG\0\0:ZUPKFC\0 YTOJEB\0\0XSNIDA\0\0\0\0\0\0\0\0";
@@ -961,7 +981,7 @@ void TINETChatScreen()
     /* DRAW SCREEN */
     gfx_ZeroScreen();
     gfx_SetTextScale(1, 1);
-    gfx_SetColor(25);
+    gfx_SetColor(49);
     gfx_FillRectangle(0, 0, GFX_LCD_WIDTH, 20);
     gfx_PrintStringXY("TINET Chat", TITLE_X_POS, TITLE_Y_POS);
     updateCaseBox(uppercase);
@@ -979,7 +999,7 @@ void TINETChatScreen()
             readSRL();
         }
 
-        gfx_SetColor(25);
+        gfx_SetColor(49);
         gfx_FillRectangle(0, 190, 320, 50);
 
         char output_buffer[48] = "RTC_CHAT:global:";
@@ -1028,7 +1048,7 @@ void TINETChatScreen()
                 char removedChar = buffer[i];
                 textX -= gfx_GetCharWidth(removedChar);
                 buffer[i] = '\0';
-                gfx_SetColor(25);
+                gfx_SetColor(45);
                 gfx_FillRectangle(0, 190, 320, 50);
                 gfx_PrintStringXY(buffer, 10, textY);
             }
@@ -1078,7 +1098,7 @@ void TINETChatScreen()
 
             SendSerial(output_buffer);
             msleep(100);
-            gfx_SetColor(25);
+            gfx_SetColor(49);
             gfx_FillRectangle(0, 210, 320, 30);
             textX = 10;
             textY = 195;
@@ -1157,7 +1177,7 @@ void addMessage(const char *message, int posY)
 void updateCaseBox(bool isUppercase)
 {
     char *boxText = isUppercase ? "UC" : "lc";
-    gfx_SetColor(25);
+    gfx_SetColor(49);
     gfx_SetTextFGColor(255);
     gfx_FillRectangle(GFX_LCD_WIDTH - gfx_GetStringWidth("UC") - 5, 0, gfx_GetStringWidth("UC") + 5, 14);
     gfx_PrintStringXY(boxText, GFX_LCD_WIDTH - gfx_GetStringWidth("UC") - 5, 4);
