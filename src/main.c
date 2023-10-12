@@ -37,7 +37,9 @@
 
 #include "ui/shapes.h"
 
-#define MAX_CHAT_MESSAGES 15
+#include "asm/scroll.h"
+
+#define MAX_CHAT_MESSAGES 30
 #define MAX_CHAT_LINE_LENGTH 260
 
 char client_version[4] = "dev";
@@ -391,7 +393,6 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton)
 
 /* DEFINE CHAT */
 void printWrappedText(const char *text, int x, int y);
-void displayMessages();
 void addMessage(const char *message, int posY);
 
 typedef struct
@@ -848,7 +849,6 @@ void readSRL()
                         messageContent++;
                         messageContent++;
                         addMessage(messageContent, 200 + messageCount * 15);
-                        displayMessages();
                     }
                 }
             }
@@ -962,7 +962,7 @@ void TINETChatScreen()
     const char *lowercasechars = "\0\0\0\0\0\0\0\0\0\0\"wrmh\0\0?[vqlg\0\0:zupkfc\0 ytojeb\0\0xsnida\0\0\0\0\0\0\0\0";
     uint8_t key, i = 0;
     int textX = 10;
-    int textY = 195;
+    int textY = 215;
     inside_RTC_chat = true;
     bool need_to_send = true;
     bool uppercase = false;
@@ -1000,7 +1000,7 @@ void TINETChatScreen()
         }
 
         gfx_SetColor(49);
-        gfx_FillRectangle(0, 190, 320, 50);
+        gfx_FillRectangle(0, 210, GFX_LCD_WIDTH, 30);
 
         char output_buffer[48] = "RTC_CHAT:global:";
 
@@ -1048,8 +1048,8 @@ void TINETChatScreen()
                 char removedChar = buffer[i];
                 textX -= gfx_GetCharWidth(removedChar);
                 buffer[i] = '\0';
-                gfx_SetColor(45);
-                gfx_FillRectangle(0, 190, 320, 50);
+                gfx_SetColor(49);
+                gfx_FillRectangle(0, 210, GFX_LCD_WIDTH, 30);
                 gfx_PrintStringXY(buffer, 10, textY);
             }
 
@@ -1101,7 +1101,7 @@ void TINETChatScreen()
             gfx_SetColor(49);
             gfx_FillRectangle(0, 210, 320, 30);
             textX = 10;
-            textY = 195;
+            textY = 215;
             need_to_send = false;
         }
     }
@@ -1110,46 +1110,12 @@ void TINETChatScreen()
     free(keyboard_sprite);
 }
 
-void displayMessages()
+void addMessage(const char *message, int posY)
 {
     gfx_SetTextScale(1, 1);
     gfx_SetTextFGColor(255);
-    int yOffset = 25;
-    gfx_SetColor(0);
-    gfx_FillRectangle(0, 20, GFX_LCD_WIDTH, 170);
-    for (int i = 0; i < messageCount; i++)
-    {
-        char* message = messageList[i].message;
-        int messageLength = strlen(message);
-        char buffer[300];
-        buffer[0] = '\0';
 
-        for (int j = 0; j < messageLength; j++)
-        {
-            char toAdd[2];
-            sprintf(toAdd, "%c", message[j]);
-            strcat(buffer, toAdd);
-            
-            int currentLineWidth = gfx_GetStringWidth(buffer);
-            
-            if (currentLineWidth > MAX_CHAT_LINE_LENGTH)
-            {
-                gfx_PrintStringXY(buffer, 10, yOffset);
-                yOffset += 10;
-                buffer[0] = '\0';
-            }
-        }
-
-        if (buffer[0] != '\0') 
-        {
-            gfx_PrintStringXY(buffer, 10, yOffset);
-            yOffset += 20;
-        }
-    }
-}
-
-void addMessage(const char *message, int posY)
-{
+    // add message to list and handle max messages
     if (messageCount >= MAX_CHAT_MESSAGES)
     {
         for (int i = 0; i < messageCount - 1; i++)
@@ -1170,6 +1136,43 @@ void addMessage(const char *message, int posY)
     newMessage.posY = posY;
     messageList[messageCount] = newMessage;
     messageCount++;
+
+    // print message on screen
+    int newlines = 0;
+    int baseYpos = 180;
+
+    int messageLength = strlen(newMessage.message);
+    char buffer[300];
+    buffer[0] = '\0';
+
+    for (int j = 0; j < messageLength; j++)
+    {
+        char toAdd[2];
+        sprintf(toAdd, "%c", newMessage.message[j]);
+        strcat(buffer, toAdd);
+        
+        int currentLineWidth = gfx_GetStringWidth(buffer);
+        
+        if (currentLineWidth > MAX_CHAT_LINE_LENGTH)
+        {
+            newlines += 1;
+            printf("%i", newlines);
+            gfx_PrintStringXY(buffer, 10, baseYpos + (10 * newlines));
+            buffer[0] = '\0';
+        }
+    }
+    printf("\n");
+    if (buffer[0] != '\0' && newlines == 0) 
+    {
+        printf("normal\n");
+        gfx_PrintStringXY(buffer, 10, baseYpos + 10 + (10 * newlines));
+    }
+
+    // scroll the screen up to make it look like a chat.
+    // Thanks to RoccoLox Programs for the scrollUp ASM
+    // located at src/asm/scroll.asm tkbstudios/tinet-calc
+    int scrollUpAmount = 10 + 10 * newlines;
+    scrollUp(0, 20, GFX_LCD_WIDTH, 190, scrollUpAmount);
 }
 
 void updateCaseBox(bool isUppercase)
