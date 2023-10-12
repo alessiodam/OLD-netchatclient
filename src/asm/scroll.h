@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-void scrollUp(unsigned int x, uint8_t y, unsigned int width, unsigned int height, unsigned int amount);
+void scrollUp(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int amount);
 
 #ifdef __cplusplus
 }
