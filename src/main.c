@@ -1170,7 +1170,7 @@ void addMessage(const char *message, int posY)
 
     // scroll the screen up to make it look like a chat.
     // Thanks to RoccoLox Programs for the scrollUp ASM
-    // located at src/asm/scroll.asm tkbstudios/tinet-calc
+    // located at src/asm/scroll.asm
     int scrollUpAmount = 10 + 10 * newlines;
     scrollUp(0, 20, GFX_LCD_WIDTH, 190, scrollUpAmount);
 }
