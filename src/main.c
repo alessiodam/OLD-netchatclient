@@ -392,19 +392,19 @@ void drawButtons(Button *buttons, int numButtons, int selectedButton)
 }
 
 /* DEFINE CHAT */
-void printWrappedText(const char *text, int x, int y);
-void addMessage(const char *message, int posY);
-
 typedef struct
 {
     char recipient[19];
-    int timestamp;
+    char timestamp[13];
+    char username[19];
     char message[200];
     int posY;
 } ChatMessage;
 
 ChatMessage messageList[MAX_CHAT_MESSAGES];
 int messageCount = 0;
+
+void addMessage(ChatMessage message);
 
 /* DEFINE DATETIME */
 typedef struct
@@ -839,17 +839,27 @@ void readSRL()
         {
             if (inside_RTC_chat)
             {
-                char *messageContent = strstr(in_buffer, ":");
-                
-                if (messageContent)
+                char *recipient = strtok(in_buffer + 10, ":");
+                char *timestamp_str = strtok(NULL, ":");
+                char *username_str = strtok(NULL, ":");
+                char *messageContent = strtok(NULL, ":");
+
+                if (recipient && timestamp_str && username_str && messageContent)
                 {
-                    messageContent = strstr(messageContent + 1, ":");
-                    if (messageContent)
-                    {
-                        messageContent++;
-                        messageContent++;
-                        addMessage(messageContent, 200 + messageCount * 15);
-                    }
+                    ChatMessage newMessage;
+                    strncpy(newMessage.recipient, recipient, sizeof(newMessage.recipient) - 1);
+                    strncpy(newMessage.timestamp, timestamp_str, sizeof(newMessage.timestamp) - 1);
+                    strncpy(newMessage.username, username_str, sizeof(newMessage.username) - 1);
+                    strncpy(newMessage.message, messageContent, sizeof(newMessage.message) - 1);
+
+                    newMessage.recipient[sizeof(newMessage.recipient) - 1] = '\0';
+                    newMessage.timestamp[sizeof(newMessage.timestamp) - 1] = '\0';
+                    newMessage.username[sizeof(newMessage.username) - 1] = '\0';
+                    newMessage.message[sizeof(newMessage.message) - 1] = '\0';
+                    messageList[messageCount] = newMessage;
+                    messageCount++;
+
+                    addMessage(newMessage);
                 }
             }
         }
@@ -999,8 +1009,7 @@ void TINETChatScreen()
             readSRL();
         }
 
-        gfx_SetColor(49);
-        gfx_FillRectangle(0, 210, GFX_LCD_WIDTH, 30);
+        shapes_RoundRectangleFill(49, 10, 310, 30, 5, 210);
 
         char output_buffer[48] = "RTC_CHAT:global:";
 
@@ -1048,8 +1057,7 @@ void TINETChatScreen()
                 char removedChar = buffer[i];
                 textX -= gfx_GetCharWidth(removedChar);
                 buffer[i] = '\0';
-                gfx_SetColor(49);
-                gfx_FillRectangle(0, 210, GFX_LCD_WIDTH, 30);
+                shapes_RoundRectangleFill(49, 10, 310, 30, 5, 210);
                 gfx_PrintStringXY(buffer, 10, textY);
             }
 
@@ -1099,7 +1107,7 @@ void TINETChatScreen()
             SendSerial(output_buffer);
             msleep(100);
             gfx_SetColor(49);
-            gfx_FillRectangle(0, 210, 320, 30);
+            shapes_RoundRectangleFill(49, 10, 310, 30, 5, 210);
             textX = 10;
             textY = 215;
             need_to_send = false;
@@ -1110,69 +1118,22 @@ void TINETChatScreen()
     free(keyboard_sprite);
 }
 
-void addMessage(const char *message, int posY)
+void addMessage(ChatMessage newMessage)
 {
     gfx_SetTextScale(1, 1);
     gfx_SetTextFGColor(255);
 
-    // add message to list and handle max messages
-    if (messageCount >= MAX_CHAT_MESSAGES)
-    {
-        for (int i = 0; i < messageCount - 1; i++)
-        {
-            strncpy(messageList[i].recipient, messageList[i + 1].recipient, sizeof(messageList[i].recipient) - 1);
-            strncpy(messageList[i].message, messageList[i + 1].message, sizeof(messageList[i].message) - 1);
-            messageList[i].recipient[sizeof(messageList[i].recipient) - 1] = '\0';
-            messageList[i].message[sizeof(messageList[i].message) - 1] = '\0';
-            messageList[i].posY = messageList[i + 1].posY;
-        }
-        messageCount--;
-    }
+    char displayMessage[300];
 
-    ChatMessage newMessage;
-    strncpy(newMessage.message, message, sizeof(newMessage.message) - 1);
-    newMessage.recipient[sizeof(newMessage.recipient) - 1] = '\0';
-    newMessage.message[sizeof(newMessage.message) - 1] = '\0';
-    newMessage.posY = posY;
-    messageList[messageCount] = newMessage;
-    messageCount++;
+    snprintf(displayMessage, sizeof(displayMessage), "%s: %s", newMessage.username, newMessage.message);
 
-    // print message on screen
-    int newlines = 0;
     int baseYpos = 180;
+    int newlines = 0;
 
-    int messageLength = strlen(newMessage.message);
-    char buffer[300];
-    buffer[0] = '\0';
-
-    for (int j = 0; j < messageLength; j++)
-    {
-        char toAdd[2];
-        sprintf(toAdd, "%c", newMessage.message[j]);
-        strcat(buffer, toAdd);
-        
-        int currentLineWidth = gfx_GetStringWidth(buffer);
-        
-        if (currentLineWidth > MAX_CHAT_LINE_LENGTH)
-        {
-            newlines += 1;
-            printf("%i", newlines);
-            gfx_PrintStringXY(buffer, 10, baseYpos + (10 * newlines));
-            buffer[0] = '\0';
-        }
-    }
-    printf("\n");
-    if (buffer[0] != '\0' && newlines == 0) 
-    {
-        printf("normal\n");
-        gfx_PrintStringXY(buffer, 10, baseYpos + 10 + (10 * newlines));
-    }
-
-    // scroll the screen up to make it look like a chat.
-    // Thanks to RoccoLox Programs for the scrollUp ASM
-    // located at src/asm/scroll.asm
     int scrollUpAmount = 10 + 10 * newlines;
-    scrollUp(0, 20, GFX_LCD_WIDTH, 190, scrollUpAmount);
+    scrollUp(0, 30, GFX_LCD_WIDTH, baseYpos, scrollUpAmount);
+
+    gfx_PrintStringXY(displayMessage, 10, baseYpos - scrollUpAmount);
 }
 
 void updateCaseBox(bool isUppercase)
