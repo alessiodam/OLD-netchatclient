@@ -8,4 +8,4 @@ The official TI-84 Plus CE client for TINET
 
 ## How to use
 
-This has been moved to the official [docs](https://tinetdocs.tkbstudios.com/)
+Everything is explained in the official **[TINET docs](https://tinetdocs.tkbstudios.com/)**

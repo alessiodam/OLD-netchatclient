@@ -291,6 +291,7 @@ void SendSerial(const char *message)
 
         totalBytesWritten += bytesWritten;
     }
+    usb_HandleEvents();
 }
 
 /* Updates kb_Data and keeps track of previous keypresses, returns true if changes were detected */
@@ -513,24 +514,19 @@ int main(void)
     gfx_SetTextScale(2, 2);
     gfx_PrintStringXY("TINET", (GFX_LCD_WIDTH - gfx_GetStringWidth("TINET")) / 2, 5);
     gfx_SetTextScale(1, 1);
-    gfx_SetTextFGColor(224);
-    //gfx_PrintStringXY("Press [clear] to quit.", (GFX_LCD_WIDTH - gfx_GetStringWidth("Press [clear] to quit.")) / 2, 35);
     gfx_SetTextFGColor(255);
 
-    /* CREATE CALCID */
+    /* GET CALCID */
     char calcidStr[sizeof(systemInfo->calcid) * 2 + 1];
     for (unsigned int i = 0; i < sizeof(systemInfo->calcid); i++)
     {
         sprintf(calcidStr + i * 2, "%02X", systemInfo->calcid[i]);
     }
 
-    /* DISPLAY CLIENT VERSION BOTTOM RIGHT */
     gfx_PrintStringXY(client_version, 320 - gfx_GetStringWidth(client_version), 232);
 
-    /* CALC ID DISPLAY CENTER */
     gfx_PrintStringXY(calcidStr, (GFX_LCD_WIDTH - gfx_GetStringWidth(calcidStr)) / 2, 205);
 
-    // Open and read NetKeyAppVar data
     NetKeyAppVar = ti_Open("NETKEY", "r");
     if (NetKeyAppVar == 0)
     {
@@ -539,7 +535,6 @@ int main(void)
     }
     else
     {
-        // Read and process NetKeyAppVar data
         read_flen = ti_GetSize(NetKeyAppVar);
         uint8_t *data_ptr = (uint8_t *)ti_GetDataPtr(NetKeyAppVar);
         ti_Close(NetKeyAppVar);
@@ -573,7 +568,6 @@ int main(void)
     do
     {
         kb_Update();
-
         usb_HandleEvents();
         if (has_srl_device)
         {
@@ -649,8 +643,6 @@ void accountInfoScreen(const char *accountInfo)
     do
     {
         kb_Update();
-
-        usb_HandleEvents();
         if (has_srl_device)
         {
             readSRL();
@@ -682,7 +674,6 @@ void dashboardScreen()
     do
     {
         kb_Update();
-        usb_HandleEvents();
         if (has_srl_device)
         {
             readSRL();
@@ -751,7 +742,8 @@ void login()
 
 void readSRL()
 {
-    size_t bytes_read = srl_Read(&srl, in_buffer, sizeof in_buffer);
+    usb_HandleEvents();
+    size_t bytes_read = srl_Read(&srl, in_buffer, 8192);
 
     if (bytes_read < 0)
     {
@@ -766,7 +758,8 @@ void readSRL()
         {
             bridge_connected = true;
             gfx_SetColor(0);
-            gfx_PrintStringXY("Bridge connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge connected!")) / 2), 47);
+            gfx_Sprite(bridge_sprite, GFX_LCD_WIDTH - bridge_width - 10, 5);
+            // gfx_PrintStringXY("Bridge connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Bridge connected!")) / 2), 47);
         }
         if (strcmp(in_buffer, "bridgeDisconnected") == 0)
         {
@@ -779,7 +772,8 @@ void readSRL()
         {
             internet_connected = true;
             gfx_SetColor(0);
-            gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 57);
+            gfx_Sprite(globe_sprite, GFX_LCD_WIDTH - bridge_width - 10 - globe_width - 10, 5);
+            // gfx_PrintStringXY("Internet connected!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Internet connected!")) / 2), 57);
             gfx_PrintStringXY("Press [enter] to connect!", ((GFX_LCD_WIDTH - gfx_GetStringWidth("Press [enter] to connect!")) / 2), 224);
         }
         if (strcmp(in_buffer, "internetDisconnected") == 0)
@@ -839,10 +833,34 @@ void readSRL()
         {
             if (inside_RTC_chat)
             {
-                char *recipient = strtok(in_buffer + 10, ":");
-                char *timestamp_str = strtok(NULL, ":");
-                char *username_str = strtok(NULL, ":");
-                char *messageContent = strtok(NULL, ":");
+                char *remaining_str = in_buffer + 10;
+                char *delimiter;
+
+                delimiter = strchr(remaining_str, ':');
+                if (!delimiter) return;
+                int index = delimiter - remaining_str;
+                char *recipient = malloc(index + 1);
+                strncpy(recipient, remaining_str, index);
+                recipient[index] = '\0';
+                remaining_str = delimiter + 1;
+
+                delimiter = strchr(remaining_str, ':');
+                if (!delimiter) return;
+                index = delimiter - remaining_str;
+                char *timestamp_str = malloc(index + 1);
+                strncpy(timestamp_str, remaining_str, index);
+                timestamp_str[index] = '\0';
+                remaining_str = delimiter + 1;
+
+                delimiter = strchr(remaining_str, ':');
+                if (!delimiter) return;
+                index = delimiter - remaining_str;
+                char *username_str = malloc(index + 1);
+                strncpy(username_str, remaining_str, index);
+                username_str[index] = '\0';
+                remaining_str = delimiter + 1;
+
+                char *messageContent = strdup(remaining_str);
 
                 if (recipient && timestamp_str && username_str && messageContent)
                 {
@@ -856,11 +874,17 @@ void readSRL()
                     newMessage.timestamp[sizeof(newMessage.timestamp) - 1] = '\0';
                     newMessage.username[sizeof(newMessage.username) - 1] = '\0';
                     newMessage.message[sizeof(newMessage.message) - 1] = '\0';
+
                     messageList[messageCount] = newMessage;
                     messageCount++;
 
                     addMessage(newMessage);
                 }
+
+                free(recipient);
+                free(timestamp_str);
+                free(username_str);
+                free(messageContent);
             }
         }
 
@@ -904,8 +928,7 @@ void howToUseScreen()
     do
     {
         kb_Update();
-
-        usb_HandleEvents();
+        
         if (has_srl_device)
         {
             readSRL();
@@ -952,7 +975,6 @@ void userNotFoundScreen()
     {
         kb_Update();
 
-        usb_HandleEvents();
         if (has_srl_device)
         {
             readSRL();
@@ -974,7 +996,6 @@ void TINETChatScreen()
     int textX = 10;
     int textY = 215;
     inside_RTC_chat = true;
-    bool need_to_send = true;
     bool uppercase = false;
     bool emojiMethod = false;
 
@@ -1001,8 +1022,6 @@ void TINETChatScreen()
     {
         char buffer[128] = {0};
         i = 0;
-
-        usb_HandleEvents();
 
         if (has_srl_device)
         {
@@ -1061,8 +1080,6 @@ void TINETChatScreen()
                 gfx_PrintStringXY(buffer, 10, textY);
             }
 
-            usb_HandleEvents();
-
             if (has_srl_device)
             {
                 readSRL();
@@ -1075,7 +1092,17 @@ void TINETChatScreen()
 
             if (key == sk_Enter)
             {
-                need_to_send = true;
+                if (strcmp(buffer, "") != 0)
+                {
+                    strcat(output_buffer, buffer);
+
+                    SendSerial(output_buffer);
+                    msleep(100);
+                    gfx_SetColor(49);
+                    shapes_RoundRectangleFill(49, 10, 310, 30, 5, 210);
+                    textX = 10;
+                    textY = 215;
+                }
                 break;
             }
 
@@ -1099,19 +1126,6 @@ void TINETChatScreen()
                 }
             }
         } while (1);
-
-        if (strcmp(buffer, "") != 0 && need_to_send == true)
-        {
-            strcat(output_buffer, buffer);
-
-            SendSerial(output_buffer);
-            msleep(100);
-            gfx_SetColor(49);
-            shapes_RoundRectangleFill(49, 10, 310, 30, 5, 210);
-            textX = 10;
-            textY = 215;
-            need_to_send = false;
-        }
     }
 
     inside_RTC_chat = false;

@@ -4,7 +4,7 @@
 
 NAME = TINET
 ICON = icon.png
-DESCRIPTION = "TINET Client"
+DESCRIPTION = "TINET Official Client"
 COMPRESSED = YES
 ARCHIVED = YES
 
