@@ -1,3 +1,12 @@
+/*
+ *--------------------------------------
+ * Program Name: TINET system
+ * Author: TKB Studios
+ * License: Apache License 2.0
+ * Description: Allows the user to communicate with the TINET servers
+ *--------------------------------------
+*/
+
 #ifndef TINET_H
 #define TINET_H
 

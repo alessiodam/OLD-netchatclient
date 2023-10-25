@@ -5,7 +5,7 @@
  * License: Apache License 2.0
  * Description: Allows the user to communicate with the TINET servers
  *--------------------------------------
- */
+*/
 
 /* When contributing, please add your username in the list here */
 /*
@@ -16,7 +16,7 @@
  * Log4Jake (Invalid_Jake)
  * Roccolox Programs
  *--------------------------------------
- */
+*/
 
 #include <string.h>
 #include <sys/lcd.h>

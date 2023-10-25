@@ -1,5 +1,7 @@
 # TINET Calculator client
 
+Copyright [2022] [TKB Studios]
+
 The official TI-84 Plus CE client for TINET
 
 [![wakatime](https://wakatime.com/badge/github/tkbstudios/tinet-calc.svg)](https://wakatime.com/badge/github/tkbstudios/tinet-calc)

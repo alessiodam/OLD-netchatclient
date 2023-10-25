@@ -1,3 +1,5 @@
+/* This was made by RoccoLox Programs, please give him credit when using his code! */
+
 #ifndef SCROLL_H
 #define SCROLL_H
 
