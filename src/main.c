@@ -37,6 +37,7 @@
 #include "gfx/gfx.h"
 
 #include "ui/shapes.h"
+#include "ui/textutils.h"
 
 #include "asm/scroll.h"
 
@@ -400,7 +401,6 @@ typedef struct
     char timestamp[13];
     char username[19];
     char message[200];
-    int posY;
 } ChatMessage;
 
 ChatMessage messageList[MAX_CHAT_MESSAGES];
@@ -1141,14 +1141,45 @@ void addMessage(ChatMessage newMessage)
     char displayMessage[300];
 
     snprintf(displayMessage, sizeof(displayMessage), "%s: %s", newMessage.username, newMessage.message);
+    SendSerial(newMessage.message);
+    
+    // the following code was taken from TIny_Hacker with permission!
+    // a little bit changed to work with the current chat system.
+    unsigned int offset = 0;
+    uint8_t line = 1;
+    unsigned int end = 0;
+    int maxLines = 5;
+    int charsPerLine = 50;
 
     int baseYpos = 180;
-    int newlines = 0;
 
-    int scrollUpAmount = 10 + 10 * newlines;
-    scrollUp(0, 30, GFX_LCD_WIDTH, baseYpos, scrollUpAmount);
+    scrollUp(0, 30, GFX_LCD_WIDTH, baseYpos, 10);
 
-    gfx_PrintStringXY(displayMessage, 10, baseYpos - scrollUpAmount);
+    while (line <= maxLines) {
+        gfx_SetTextXY(10, 180);
+
+        if (line != maxLines) {
+            end = spaceSearch(displayMessage + offset, charsPerLine);
+        } else {
+            end = charsPerLine;
+        }
+
+        for (unsigned int byte = 0; byte < end; byte++) {
+            if ((displayMessage + offset)[byte] == '\0') {
+                return;
+            }
+
+            if (line == maxLines && byte == end - 1 && (displayMessage + offset)[byte + 1] != '\0') {
+                gfx_PrintString("...");
+            } else {
+                gfx_PrintChar((displayMessage + offset)[byte]);
+            }
+        }
+
+        offset += end;
+        scrollUp(0, 30, GFX_LCD_WIDTH, baseYpos, 10);
+        line++;
+    }
 }
 
 void updateCaseBox(bool isUppercase)
