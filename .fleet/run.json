@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "command",
+            "name": "Make",
+            "program": "C:/CEdev/bin/make.exe",
+        },
+        
+    ]
+}
