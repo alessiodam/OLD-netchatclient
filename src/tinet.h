@@ -10,13 +10,33 @@
 #ifndef TINET_H
 #define TINET_H
 
-// put those other mf headers here
+#include <srldrvce.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void my_external_source_function(void);
+ typedef enum {
+  TINET_SUCCESS,
+  TINET_NO_KEYFILE,
+  TINET_INVALID_KEYFILE,
+  TINET_SRL_INIT_FAIL,
+  TINET_SRL_WRITE_FAIL
+ } TINET_ReturnCodes;
+
+ int tinet_init();
+
+ char* tinet_get_username();
+
+ int tinet_connect();
+
+ srl_device_t tinet_get_srl_device();
+
+ int tinet_write_srl(const char *message);
+
+ bool tinet_is_srl_device_present();
+
+ void tinet_handle_usb_events();
 
 #ifdef __cplusplus
 }
