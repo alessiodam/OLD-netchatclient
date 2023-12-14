@@ -23,9 +23,12 @@
 #include "tice.h"
 #include <stdio.h>
 #include <keypadc.h>
+#include <string.h>
 
 uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
+
+char in_buffer[1024];
 
 /* Updates kb_Data and keeps track of previous keypresses, returns true if changes were detected */
 bool kb_Update()
@@ -73,7 +76,7 @@ int main() {
 
     msleep(1000);
 
-    // TODO: fix this so we don't need to fast press [clear] to write to serial.
+    // TODO: make this work flawlessly and correctly
     printf("waiting for srl device..\n");
     do {
         kb_Update();
@@ -82,8 +85,20 @@ int main() {
             printf("srl device found\n");
             break;
         }
-    } while (kb_Data[6] != kb_Clear || has_srl_device);
+    } while (kb_Data[6] != kb_Clear);
 
+    do {
+        const int bytes_received = tinet_read_srl(in_buffer);
+        if (bytes_received > 0) {
+            has_srl_device = true;
+            const int bytes_written = tinet_write_srl("Hello from the new TINET client currently in rewrite!\n");
+            printf("wrote %i bytes\n", bytes_written);
+        }
+        usb_HandleEvents();
+        kb_Update();
+    } while (kb_Data[6] != kb_Clear);
+
+    /*
     do {
         if (has_srl_device) {
             printf("writing to serial\n");
@@ -107,7 +122,7 @@ int main() {
         usb_HandleEvents();
         msleep(1000);
     } while (kb_Data[6] != kb_Clear);
-
+    */
     usb_Cleanup();
     return 0;
 }

@@ -17,13 +17,15 @@ extern "C" {
 #endif
 
  extern bool has_srl_device;
+ extern bool bridge_connected;
 
  typedef enum {
   TINET_SUCCESS,
   TINET_NO_KEYFILE,
   TINET_INVALID_KEYFILE,
   TINET_SRL_INIT_FAIL,
-  TINET_SRL_WRITE_FAIL
+  TINET_SRL_WRITE_FAIL,
+  TINET_SRL_READ_FAIL
  } TINET_ReturnCodes;
 
  int tinet_init();
@@ -35,6 +37,8 @@ extern "C" {
  srl_device_t tinet_get_srl_device();
 
  int tinet_write_srl(const char *message);
+
+ int tinet_read_srl(char *buffer);
 
 #ifdef __cplusplus
 }
