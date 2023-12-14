@@ -67,33 +67,45 @@ int main() {
         case TINET_SRL_INIT_FAIL:
             printf("SRL init failed!\n");
         default:
-            printf("Init not handled!\n");
+            printf("Init case not\nimplemented!\n");
         break;
     }
+
     msleep(1000);
+
+    // TODO: fix this so we don't need to fast press [clear] to write to serial.
+    printf("waiting for srl device..\n");
     do {
-        printf("waiting for srl device..\n");
         kb_Update();
         usb_HandleEvents();
         if (has_srl_device) {
+            printf("srl device found\n");
             break;
         }
-    } while (kb_Data[6] != kb_Clear);
+    } while (kb_Data[6] != kb_Clear || has_srl_device);
 
     do {
         if (has_srl_device) {
             printf("writing to serial\n");
-            const int written = tinet_write_srl("Hello from TINET calc!");
-            if (written == TINET_SRL_WRITE_FAIL) {
-                printf("serial write failed!\n");
+            const int written = tinet_write_srl("Hello from TINET calc!\n");
+            switch (written) {
+                case TINET_SRL_WRITE_FAIL:
+                    printf("srl write fail\n");
+                break;
+                case TINET_SUCCESS:
+                    printf("write success!\n");
+                break;
+                default:
+                    printf("write scenario not\nimplemented!");
+                break;
             }
+        } else {
+            printf("No serial device!");
         }
-        else {
-            printf("no srl device connected!\n");
-        }
+
         kb_Update();
         usb_HandleEvents();
-        msleep(500);
+        msleep(1000);
     } while (kb_Data[6] != kb_Clear);
 
     usb_Cleanup();

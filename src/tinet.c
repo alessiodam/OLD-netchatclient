@@ -34,27 +34,29 @@ usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_d
  if (event == USB_HOST_CONFIGURE_EVENT || (event == USB_DEVICE_ENABLED_EVENT && !(usb_GetRole() & USB_ROLE_DEVICE)))
  {
 
-  if (has_srl_device)
+  if (has_srl_device) {
    return USB_SUCCESS;
+  }
 
   usb_device_t device;
   if (event == USB_HOST_CONFIGURE_EVENT)
   {
    device = usb_FindDevice(NULL, NULL, USB_SKIP_HUBS);
    if (device == NULL)
-    return USB_SUCCESS;
+    return USB_ERROR_NO_DEVICE;
   }
   else
   {
+   has_srl_device = true;
    device = event_data;
   }
 
   const srl_error_t error = srl_Open(&srl_device, device, srl_buf, sizeof srl_buf, SRL_INTERFACE_ANY, 9600);
   if (error)
   {
+   has_srl_device = true;
    return 0;
   }
-  has_srl_device = true;
  }
 
  if (event == USB_DEVICE_DISCONNECTED_EVENT)
@@ -66,7 +68,6 @@ usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_d
    has_srl_device = false;
   }
  }
-
  return USB_SUCCESS;
 }
 
