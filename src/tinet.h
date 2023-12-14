@@ -16,6 +16,8 @@
 extern "C" {
 #endif
 
+ bool has_srl_device = false;
+
  typedef enum {
   TINET_SUCCESS,
   TINET_NO_KEYFILE,
@@ -33,10 +35,6 @@ extern "C" {
  srl_device_t tinet_get_srl_device();
 
  int tinet_write_srl(const char *message);
-
- bool tinet_is_srl_device_present();
-
- void tinet_handle_usb_events();
 
 #ifdef __cplusplus
 }

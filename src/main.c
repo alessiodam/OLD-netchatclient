@@ -74,15 +74,15 @@ int main() {
     do {
         printf("waiting for srl device..\n");
         kb_Update();
-        tinet_handle_usb_events();
-        if (tinet_is_srl_device_present()) {
+        usb_HandleEvents();
+        if (has_srl_device) {
             break;
         }
         msleep(500);
     } while (kb_Data[6] != kb_Clear);
 
     do {
-        if (tinet_is_srl_device_present()) {
+        if (has_srl_device) {
             printf("writing to serial\n");
             const int written = tinet_write_srl("Hello from TINET calc!");
             if (written == TINET_SRL_WRITE_FAIL) {
@@ -93,7 +93,7 @@ int main() {
             printf("no srl device connected!\n");
         }
         kb_Update();
-        tinet_handle_usb_events();
+        usb_HandleEvents();
         msleep(500);
     } while (kb_Data[6] != kb_Clear);
 

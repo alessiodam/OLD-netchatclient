@@ -18,7 +18,6 @@ uint8_t NetKeyAppVar;
 
 srl_device_t srl_device;
 uint8_t srl_buf[512];
-bool has_srl_device = false;
 
 usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
 {
@@ -127,12 +126,4 @@ int tinet_write_srl(const char *message) {
  }
  usb_HandleEvents();
  return TINET_SUCCESS;
-}
-
-bool tinet_is_srl_device_present() {
- return has_srl_device;
-}
-
-void tinet_handle_usb_events() {
- usb_HandleEvents();
 }
