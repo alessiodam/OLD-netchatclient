@@ -18,6 +18,7 @@ uint8_t NetKeyAppVar;
 
 srl_device_t srl_device;
 uint8_t srl_buf[512];
+bool has_srl_device = false;
 
 usb_error_t handle_usb_event(usb_event_t event, void *event_data, usb_callback_data_t *callback_data)
 {

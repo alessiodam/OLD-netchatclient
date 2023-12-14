@@ -16,7 +16,7 @@
 extern "C" {
 #endif
 
- bool has_srl_device = false;
+ extern bool has_srl_device;
 
  typedef enum {
   TINET_SUCCESS,

@@ -78,7 +78,6 @@ int main() {
         if (has_srl_device) {
             break;
         }
-        msleep(500);
     } while (kb_Data[6] != kb_Clear);
 
     do {
