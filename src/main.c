@@ -21,14 +21,13 @@
 
 #include <stdio.h>
 #include <keypadc.h>
-#include <string.h>
 #include "tice.h"
 #include "tinet-lib/tinet.h"
 
 uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
 
-char in_buffer[1024];
+char in_buffer[4096];
 
 /* Updates kb_Data and keeps track of previous keypresses, returns true if changes were detected */
 bool kb_Update()
@@ -55,7 +54,7 @@ bool kb_Update()
 
 
 int main() {
-    const int tinet_init_success = tinet_init();
+    const TINET_ReturnCode tinet_init_success = tinet_init();
     switch (tinet_init_success) {
         case TINET_SUCCESS:
             printf("Init success\n");
@@ -87,49 +86,41 @@ int main() {
         }
     } while (kb_Data[6] != kb_Clear);
 
+    const TINET_ReturnCode connect_success = tinet_connect(10);
+    switch (connect_success) {
+        case TINET_SUCCESS:
+            printf("Connect success\n");
+            break;
+        case TINET_TIMEOUT_EXCEEDED:
+            printf("Connect timeout exceeded\n");
+            break;
+        default:
+            printf("Unhandled connect response\n");
+            break;
+    }
+
     do {
-        const int bytes_received = tinet_read_srl(in_buffer);
-        if (bytes_received > 0) {
+        const TINET_ReturnCode read_success = tinet_read_srl(in_buffer);
+        if (read_success == TINET_SUCCESS) {
             has_srl_device = true;
-            const int bytes_written = tinet_write_srl(strcat(in_buffer, "-ECHO"));
-            switch (bytes_written) {
+            const TINET_ReturnCode write_success = tinet_write_srl(in_buffer);
+            switch (write_success) {
+                case TINET_SUCCESS:
+                    printf("written\n");
+                    break;
                 case TINET_SRL_WRITE_FAIL:
                     printf("Could not write!\n");
                     break;
                 default:
-                    printf("wrote %i bytes\n", bytes_written);
+                    printf("Write return not handled\n");
                     break;
             }
         }
+        in_buffer[0] = '\0';
         usb_HandleEvents();
         kb_Update();
     } while (kb_Data[6] != kb_Clear);
 
-    /*
-    do {
-        if (has_srl_device) {
-            printf("writing to serial\n");
-            const int written = tinet_write_srl("Hello from TINET calc!\n");
-            switch (written) {
-                case TINET_SRL_WRITE_FAIL:
-                    printf("srl write fail\n");
-                break;
-                case TINET_SUCCESS:
-                    printf("write success!\n");
-                break;
-                default:
-                    printf("write scenario not\nimplemented!");
-                break;
-            }
-        } else {
-            printf("No serial device!");
-        }
-
-        kb_Update();
-        usb_HandleEvents();
-        msleep(1000);
-    } while (kb_Data[6] != kb_Clear);
-    */
     usb_Cleanup();
     return 0;
 }
