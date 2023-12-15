@@ -19,7 +19,7 @@
  *--------------------------------------
 */
 
-#include "tinet.h"
+#include "tinet-lib/tinet.h"
 #include "tice.h"
 #include <stdio.h>
 #include <keypadc.h>
@@ -91,8 +91,15 @@ int main() {
         const int bytes_received = tinet_read_srl(in_buffer);
         if (bytes_received > 0) {
             has_srl_device = true;
-            const int bytes_written = tinet_write_srl("Hello from the new TINET client currently in rewrite!\n");
-            printf("wrote %i bytes\n", bytes_written);
+            const int bytes_written = tinet_write_srl(strcat(in_buffer, "-ECHO"));
+            switch (bytes_written) {
+                case TINET_SRL_WRITE_FAIL:
+                    printf("Could not write!\n");
+                    break;
+                default:
+                    printf("wrote %i bytes\n", bytes_written);
+                    break;
+            }
         }
         usb_HandleEvents();
         kb_Update();
