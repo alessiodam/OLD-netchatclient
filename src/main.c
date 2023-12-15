@@ -19,11 +19,11 @@
  *--------------------------------------
 */
 
-#include "tinet-lib/tinet.h"
-#include "tice.h"
 #include <stdio.h>
 #include <keypadc.h>
 #include <string.h>
+#include "tice.h"
+#include "tinet-lib/tinet.h"
 
 uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
@@ -53,6 +53,7 @@ bool kb_Update()
     return false;
 }
 
+
 int main() {
     const int tinet_init_success = tinet_init();
     switch (tinet_init_success) {
@@ -76,7 +77,6 @@ int main() {
 
     msleep(1000);
 
-    // TODO: make this work flawlessly and correctly
     printf("waiting for srl device..\n");
     do {
         kb_Update();
