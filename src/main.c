@@ -21,8 +21,12 @@
 
 #include <stdio.h>
 #include <keypadc.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "tice.h"
 #include "tinet-lib/tinet.h"
+#include "utils/textutils/textutils.h"
 
 uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
@@ -52,8 +56,46 @@ bool kb_Update()
     return false;
 }
 
+// TODO: REWRITE COMPLETE CHAT SYSTEM
+void showChatMessage() {
+    const char *remaining_str = in_buffer + 10;
+
+    const char* delimiter = strchr(remaining_str, ':');
+    if (!delimiter) return;
+    int index = delimiter - remaining_str;
+    char *recipient = malloc(index + 1);
+    strncpy(recipient, remaining_str, index);
+    recipient[index] = '\0';
+    remaining_str = delimiter + 1;
+
+    delimiter = strchr(remaining_str, ':');
+    if (!delimiter) return;
+    index = delimiter - remaining_str;
+    char *timestamp_str = malloc(index + 1);
+    strncpy(timestamp_str, remaining_str, index);
+    timestamp_str[index] = '\0';
+    remaining_str = delimiter + 1;
+
+    delimiter = strchr(remaining_str, ':');
+    if (!delimiter) return;
+    index = delimiter - remaining_str;
+    char *username_str = malloc(index + 1);
+    strncpy(username_str, remaining_str, index);
+    username_str[index] = '\0';
+    remaining_str = delimiter + 1;
+
+    const char *messageContent = strdup(remaining_str);
+
+    if (messageContent)
+    {
+        char displayMessage[300];
+        snprintf(displayMessage, sizeof(displayMessage), "%s: %s", username_str, messageContent);
+        printf("%s\n", displayMessage);
+    }
+}
 
 int main() {
+    os_ClrHome();
     const TINET_ReturnCode tinet_init_success = tinet_init();
     switch (tinet_init_success) {
         case TINET_SUCCESS:
@@ -86,7 +128,8 @@ int main() {
         }
     } while (kb_Data[6] != kb_Clear);
 
-    const TINET_ReturnCode connect_success = tinet_connect(10);
+    /* at least 20 seconds timeout during rewrite */
+    const TINET_ReturnCode connect_success = tinet_connect(20);
     switch (connect_success) {
         case TINET_SUCCESS:
             printf("Connect success\n");
@@ -94,32 +137,23 @@ int main() {
         case TINET_TIMEOUT_EXCEEDED:
             printf("Connect timeout exceeded\n");
             break;
+        case TINET_TCP_INIT_FAILED:
+            printf("TCP init failed\n");
+            break;
         default:
             printf("Unhandled connect response\n");
             break;
     }
 
     do {
-        const TINET_ReturnCode read_success = tinet_read_srl(in_buffer);
-        if (read_success == TINET_SUCCESS) {
-            has_srl_device = true;
-            const TINET_ReturnCode write_success = tinet_write_srl(in_buffer);
-            switch (write_success) {
-                case TINET_SUCCESS:
-                    printf("written\n");
-                    break;
-                case TINET_SRL_WRITE_FAIL:
-                    printf("Could not write!\n");
-                    break;
-                default:
-                    printf("Write return not handled\n");
-                    break;
+        kb_Update();
+        const int read_return = tinet_read_srl(in_buffer);
+        if (read_return > 0) {
+            if (StartsWith(in_buffer, "RTC_CHAT:")) {
+                showChatMessage();
             }
         }
-        in_buffer[0] = '\0';
-        usb_HandleEvents();
-        kb_Update();
-    } while (kb_Data[6] != kb_Clear);
+    } while (has_srl_device && bridge_connected && kb_Data[6] != kb_Clear);
 
     usb_Cleanup();
     return 0;
