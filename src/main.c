@@ -128,7 +128,6 @@ int main() {
         }
     } while (kb_Data[6] != kb_Clear);
 
-    /* at least 20 seconds timeout during rewrite */
     const TINET_ReturnCode connect_success = tinet_connect(20);
     switch (connect_success) {
         case TINET_SUCCESS:
