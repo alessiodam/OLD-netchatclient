@@ -56,43 +56,32 @@ bool kb_Update()
     return false;
 }
 
-// TODO: REWRITE COMPLETE CHAT SYSTEM
 void showChatMessage() {
-    const char *remaining_str = in_buffer + 10;
+    char *pieces[4];
+    msleep(200);
+    tinet_write_srl(in_buffer);
 
-    const char* delimiter = strchr(remaining_str, ':');
-    if (!delimiter) return;
-    int index = delimiter - remaining_str;
-    char *recipient = malloc(index + 1);
-    strncpy(recipient, remaining_str, index);
-    recipient[index] = '\0';
-    remaining_str = delimiter + 1;
+    // Ignore "RTC_CHAT:"
+    strtok(in_buffer, ":");
 
-    delimiter = strchr(remaining_str, ':');
-    if (!delimiter) return;
-    index = delimiter - remaining_str;
-    char *timestamp_str = malloc(index + 1);
-    strncpy(timestamp_str, remaining_str, index);
-    timestamp_str[index] = '\0';
-    remaining_str = delimiter + 1;
-
-    delimiter = strchr(remaining_str, ':');
-    if (!delimiter) return;
-    index = delimiter - remaining_str;
-    char *username_str = malloc(index + 1);
-    strncpy(username_str, remaining_str, index);
-    username_str[index] = '\0';
-    remaining_str = delimiter + 1;
-
-    const char *messageContent = strdup(remaining_str);
-
-    if (messageContent)
-    {
-        char displayMessage[300];
-        snprintf(displayMessage, sizeof(displayMessage), "%s: %s", username_str, messageContent);
-        printf("%s\n", displayMessage);
+    // Split the string into 4 pieces
+    for (int i = 0; i < 4; i++) {
+        char* token = strtok(NULL, ":");
+        if (token != NULL) {
+            pieces[i] = token;
+        } else {
+            printf("Invalid message string!.\n");
+        }
     }
+
+    // Print the pieces
+    printf("Recipient: %s\n", pieces[0]);
+    printf("Timestamp: %s\n", pieces[1]);
+    printf("Username: %s\n", pieces[2]);
+    printf("Message: %s\n", pieces[3]);
+
 }
+
 
 int main() {
     os_ClrHome();
