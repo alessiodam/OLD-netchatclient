@@ -27,12 +27,11 @@
 #include "tice.h"
 #include "tinet-lib/tinet.h"
 #include "utils/textutils/textutils.h"
-#include "ti/vars.h"
 
 uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
 
-char in_buffer[4096];
+char in_buffer[512];
 
 /* Updates kb_Data and keeps track of previous keypresses, returns true if changes were detected */
 bool kb_Update()
@@ -57,47 +56,29 @@ bool kb_Update()
     return false;
 }
 
-int runProgramCallback() {
-    printf("program callback\n");
-    sleep(2);
-    exit(0);
-}
+void processNewChatMessage() {
+    char *pieces[4];
+    msleep(200);
+    tinet_write_srl(in_buffer);
 
-void handle_in_buffer() {
-    if (StartsWith(in_buffer, "RTC_CHAT:")) {
-        char *pieces[4];
-        msleep(200);
-        tinet_write_srl(in_buffer);
+    // Ignore "RTC_CHAT:"
+    strtok(in_buffer, ":");
 
-        // Ignore "RTC_CHAT:"
-        strtok(in_buffer, ":");
-
-        // Split the string into 4 pieces
-        for (int i = 0; i < 4; i++) {
-            char* token = strtok(NULL, ":");
-            if (token != NULL) {
-                pieces[i] = token;
-            } else {
-                printf("Invalid message string!.\n");
-            }
-        }
-
-        // Print the pieces
-        printf("Recipient: %s\n", pieces[0]);
-        printf("Timestamp: %s\n", pieces[1]);
-        printf("Username: %s\n", pieces[2]);
-        printf("Message: %s\n", pieces[3]);
-    }
-    if (StartsWith(in_buffer, "RUN_PROGRAM:")) {
-        // Ignore "RTC_CHAT:"
-        strtok(in_buffer, ":");
-        const char* program = strtok(NULL, ":");
-        if (program != NULL) {
-            os_RunPrgm(program, NULL, 0, runProgramCallback);
+    // Split the string into 4 pieces
+    for (int i = 0; i < 4; i++) {
+        char* token = strtok(NULL, ":");
+        if (token != NULL) {
+            pieces[i] = token;
         } else {
-            printf("invalid program!");
+            printf("Invalid message string!.\n");
         }
     }
+
+    // Print the pieces
+    printf("Recipient: %s\n", pieces[0]);
+    printf("Timestamp: %s\n", pieces[1]);
+    printf("Username: %s\n", pieces[2]);
+    printf("Message: %s\n", pieces[3]);
 }
 
 int main() {
@@ -151,26 +132,34 @@ int main() {
     if (has_srl_device && bridge_connected && tcp_connected) {
         printf("Logging in...\n");
         tinet_login(10);
+        printf("Logged in as %s!\n", tinet_get_username());
+        tinet_send_rtc_message("global", "entered the room.");
         printf("Start reading..\n");
         do {
             kb_Update();
+            if (kb_Data[6] != kb_Clear) {break;}
             const int read_return = tinet_read_srl(in_buffer);
             if (read_return > 0) {
-                handle_in_buffer();
+                if (StartsWith(in_buffer, "RTC_CHAT:")) {
+                    processNewChatMessage();
+                }
             } else if (read_return < 0) {
                 printf("read error\n");
             }
-        } while (has_srl_device && bridge_connected && kb_Data[6] != kb_Clear);
+        } while (has_srl_device && bridge_connected && tcp_connected);
     } else if (!has_srl_device) {
-        printf("No srl available\n");
+        printf("No srl connection\n");
     } else if (!bridge_connected) {
-        printf("No bridge available\n");
+        printf("No bridge connection\n");
     } else if (!tcp_connected) {
-        printf("No TCP server\n");
+        printf("No TCP connection\n");
     }
 
     printf("quitting..\n");
-    sleep(2);
+    if (has_srl_device && bridge_connected && tcp_connected) {
+        tinet_send_rtc_message("global", "left the room.");
+    }
+    sleep(1);
 
     usb_Cleanup();
     return 0;
