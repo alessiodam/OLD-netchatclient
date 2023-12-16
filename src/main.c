@@ -1,22 +1,16 @@
 /* CODE IN REWRITE */
 /*
 *--------------------------------------
- * Program Name: TINET Client (Calculator)
+ * Program Name: TINET Chat
  * Author: TKB Studios
  * License: Apache License 2.0
- * Description: Allows the user to communicate with the TINET servers
+ * Description: Allows the user to chat on TINET!
  *--------------------------------------
 */
 
-/* When contributing, please add your username in the list here */
+/* When contributing, please add your username in the list here with what you made/edited */
 /*
- *--------------Contributors--------------
- * TIny_Hacker
- * ACagliano (Anthony Cagliano)
- * Powerbyte7
- * Log4Jake (Invalid_Jake)
- * Roccolox Programs
- *--------------------------------------
+ * Powerbyte7 - kb_Update
 */
 
 #include <stdio.h>
@@ -28,10 +22,25 @@
 #include "tinet-lib/tinet.h"
 #include "utils/textutils/textutils.h"
 
+#define MAX_CHAT_MESSAGES 50
+
+// key things
 uint8_t previous_kb_Data[8];
 uint8_t debounce_delay = 10;
 
+// serial things
 char in_buffer[512];
+
+// chat variables
+typedef struct {
+    char recipient[19];
+    char timestamp[20];
+    char username[19];
+    char message[201];
+} ChatMessage;
+
+ChatMessage messageList[MAX_CHAT_MESSAGES];
+int messageCount = 0;
 
 /* Updates kb_Data and keeps track of previous keypresses, returns true if changes were detected */
 bool kb_Update()
@@ -58,9 +67,6 @@ bool kb_Update()
 
 void processNewChatMessage() {
     char *pieces[4];
-    msleep(200);
-    tinet_write_srl(in_buffer);
-
     // Ignore "RTC_CHAT:"
     strtok(in_buffer, ":");
 
@@ -74,11 +80,22 @@ void processNewChatMessage() {
         }
     }
 
-    // Print the pieces
-    printf("Recipient: %s\n", pieces[0]);
-    printf("Timestamp: %s\n", pieces[1]);
-    printf("Username: %s\n", pieces[2]);
-    printf("Message: %s\n", pieces[3]);
+    ChatMessage new_message;
+
+    strncpy(new_message.recipient, pieces[0], sizeof(new_message.recipient) - 1);
+    strncpy(new_message.timestamp, pieces[1], sizeof(new_message.timestamp) - 1);
+    strncpy(new_message.username, pieces[2], sizeof(new_message.username) - 1);
+    strncpy(new_message.message, pieces[3], sizeof(new_message.message) - 1);
+
+    messageList[messageCount] = new_message;
+    messageCount++;
+
+    // printf("%s: %s\n", pieces[2], pieces[3]);
+    // Print the pieces - debug
+    printf("Recipient: %s\n", new_message.recipient);
+    printf("Timestamp: %s\n", new_message.timestamp);
+    printf("Username: %s\n", new_message.username);
+    printf("Message: %s\n", new_message.message);
 }
 
 int main() {
@@ -88,7 +105,7 @@ int main() {
         case TINET_SUCCESS:
             printf("Init success\n");
             const char* username = tinet_get_username();
-            printf("%s\n", username);
+            printf("username: %s\n", username);
             break;
         case TINET_NO_KEYFILE:
             printf("No keyfile!\n");
@@ -133,11 +150,24 @@ int main() {
         printf("Logging in...\n");
         tinet_login(10);
         printf("Logged in as %s!\n", tinet_get_username());
+        sleep(1);
+        os_ClrHome();
         tinet_send_rtc_message("global", "entered the room.");
-        printf("Start reading..\n");
+        printf("TINET NETCHAT\n");
         do {
             kb_Update();
-            if (kb_Data[6] != kb_Clear) {break;}
+            if (kb_Data[6] == kb_Clear) {break;}
+            if (kb_Data[6] == kb_Enter) {
+                sleep(1);
+                char recipient_buffer[19];
+                char message_buffer[200];
+                // prompt for a recipient and message
+                os_GetStringInput("recipient: ", recipient_buffer, 19);
+                os_GetStringInput("message: ", message_buffer, 200);
+                tinet_send_rtc_message(recipient_buffer, message_buffer);
+                recipient_buffer[0] = '\0';
+                message_buffer[0] = '\0';
+            }
             const int read_return = tinet_read_srl(in_buffer);
             if (read_return > 0) {
                 if (StartsWith(in_buffer, "RTC_CHAT:")) {
