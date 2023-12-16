@@ -90,12 +90,12 @@ void processNewChatMessage() {
     messageList[messageCount] = new_message;
     messageCount++;
 
-    // printf("%s: %s\n", pieces[2], pieces[3]);
+    printf("%s:\n  %s\n", new_message.username, new_message.message);
     // Print the pieces - debug
-    printf("Recipient: %s\n", new_message.recipient);
-    printf("Timestamp: %s\n", new_message.timestamp);
-    printf("Username: %s\n", new_message.username);
-    printf("Message: %s\n", new_message.message);
+    // printf("Recipient: %s\n", new_message.recipient);
+    // printf("Timestamp: %s\n", new_message.timestamp);
+    // printf("Username: %s\n", new_message.username);
+    // printf("Message: %s\n", new_message.message);
 }
 
 int main() {
@@ -152,7 +152,6 @@ int main() {
         printf("Logged in as %s!\n", tinet_get_username());
         sleep(1);
         os_ClrHome();
-        tinet_send_rtc_message("global", "entered the room.");
         printf("TINET NETCHAT\n");
         do {
             kb_Update();
@@ -163,10 +162,13 @@ int main() {
                 char message_buffer[200];
                 // prompt for a recipient and message
                 os_GetStringInput("recipient: ", recipient_buffer, 19);
+                printf("\n");
                 os_GetStringInput("message: ", message_buffer, 200);
+                printf("\n");
                 tinet_send_rtc_message(recipient_buffer, message_buffer);
                 recipient_buffer[0] = '\0';
                 message_buffer[0] = '\0';
+                sleep(1);
             }
             const int read_return = tinet_read_srl(in_buffer);
             if (read_return > 0) {
@@ -186,10 +188,6 @@ int main() {
     }
 
     printf("quitting..\n");
-    if (has_srl_device && bridge_connected && tcp_connected) {
-        tinet_send_rtc_message("global", "left the room.");
-    }
-    sleep(1);
 
     usb_Cleanup();
     return 0;
