@@ -148,25 +148,28 @@ int main() {
             break;
     }
 
-    if (has_srl_device) {
+    if (has_srl_device && bridge_connected && tcp_connected) {
         printf("Logging in...\n");
-        //tinet_login();
+        tinet_login(10);
         printf("Start reading..\n");
         do {
             kb_Update();
             const int read_return = tinet_read_srl(in_buffer);
             if (read_return > 0) {
-                printf("read %i bytes\n", read_return);
                 handle_in_buffer();
             } else if (read_return < 0) {
                 printf("read error\n");
             }
         } while (has_srl_device && bridge_connected && kb_Data[6] != kb_Clear);
-    } else {
-        printf("No srl available, quitting\n");
-
+    } else if (!has_srl_device) {
+        printf("No srl available\n");
+    } else if (!bridge_connected) {
+        printf("No bridge available\n");
+    } else if (!tcp_connected) {
+        printf("No TCP server\n");
     }
 
+    printf("quitting..\n");
     sleep(2);
 
     usb_Cleanup();
