@@ -2,9 +2,9 @@
 # Makefile Options
 # ----------------------------
 
-NAME = TINET
+NAME = NETCHAT
 ICON = icon.png
-DESCRIPTION = "rewrite - TINET Official Client"
+DESCRIPTION = "rewrite - TINET Chat"
 COMPRESSED = YES
 ARCHIVED = YES
 COMPRESSED_MODE = zx0
