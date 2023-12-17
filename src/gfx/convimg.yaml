@@ -238,9 +238,6 @@ outputs:
       - connection_palette
       - emoji_palette
     converts:
-      - globe
-      - key
-      - bridge
       - keyboard
       - blush
       - cry
