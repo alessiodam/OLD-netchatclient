@@ -2,35 +2,12 @@ palettes:
   - name: global_palette
     images: automatic
 
-  - name: connection_palette
-    fixed-entries:
-      - color: { index: 0, r: 255, g: 255, b: 255 }
-    images: automatic
-
   - name: emoji_palette
     fixed-entries:
       - color: { index: 0, r: 255, g: 255, b: 255 }
     images: automatic
 
 converts:
-  - name: globe
-    palette: connection_palette
-    compress: zx0
-    images:
-      - connection/globe.png
-
-  - name: key
-    palette: connection_palette
-    compress: zx0
-    images:
-      - connection/key.png
-
-  - name: bridge
-    palette: connection_palette
-    compress: zx0
-    images:
-      - connection/bridge.png
-
   - name: keyboard
     palette: global_palette
     compress: zx0
