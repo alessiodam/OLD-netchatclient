@@ -15,7 +15,7 @@
 
 /*
  * Dear programmer,
- * when I worte this code, only God and I
+ * when I wrote this code, only God and I
  * knew how it worked.
  * Now, only God knows it!
  *
