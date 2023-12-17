@@ -13,6 +13,20 @@
  * Powerbyte7 - kb_Update
 */
 
+/*
+ * Dear programmer,
+ * when I worte this code, only God and I
+ * knew how it worked.
+ * Now, only God knows it!
+ *
+ * Therefore, if you are trying to optimize
+ * this code and it fails (most surely),
+ * please increase this counter as
+ * a warning for the next person:
+ *
+ * Total hours wasted here = 5 hours.
+*/
+
 #include <stdio.h>
 #include <keypadc.h>
 #include <stdlib.h>

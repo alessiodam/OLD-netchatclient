@@ -9,3 +9,4 @@ nul.d
 src/gfx/convimg.yaml.lst
 .idea
 .cache
+compile_commands.json
