@@ -31,12 +31,18 @@
 #include <keypadc.h>
 #include <stdlib.h>
 #include <string.h>
+#include <graphx.h>
 
 #include "tice.h"
 #include "tinet-lib/tinet.h"
 #include "utils/textutils/textutils.h"
+#include "asm/scroll.h"
 
 #define MAX_CHAT_MESSAGES 50
+#define MESSAGE_Y_POS 180
+
+// tinet needed vars
+bool init_success = false;
 
 // key things
 uint8_t previous_kb_Data[8];
@@ -104,105 +110,157 @@ void processNewChatMessage() {
     messageList[messageCount] = new_message;
     messageCount++;
 
-    printf("%s:\n  %s\n", new_message.username, new_message.message);
-    // Print the pieces - debug
-    // printf("Recipient: %s\n", new_message.recipient);
-    // printf("Timestamp: %s\n", new_message.timestamp);
-    // printf("Username: %s\n", new_message.username);
-    // printf("Message: %s\n", new_message.message);
+    // 15 is topbar, 35 is textbox (30) + safety value to prevent scrolling up the textbox
+    scrollUp(0, 15, GFX_LCD_WIDTH, GFX_LCD_HEIGHT - 15 - 35, 10);
+    gfx_SetTextFGColor(25);
+    gfx_PrintStringXY(new_message.username, 10, MESSAGE_Y_POS);
+    gfx_SetTextFGColor(0);
+    gfx_PrintStringXY(": ", 10 + gfx_GetStringWidth(new_message.username), MESSAGE_Y_POS);
+    gfx_PrintStringXY(
+        new_message.message,
+        10 + gfx_GetStringWidth(new_message.username) + gfx_GetStringWidth(": "),
+        MESSAGE_Y_POS
+    );
+}
+
+void updateCaseText(bool isUppercase) {
+    char *text[3] = isUppercase ? "UC" : "lc";
+    int textWidth = gfx_GetStringWidth(text);
+    gfx_FillRectangle(GFX_LCD_WIDTH - textWidth - 5, 20, textWidth + 5, 10);
+    gfx_PrintStringXY(text ? "UC" : "lc", GFX_LCD_WIDTH - textWidth - 5, 4);
+}
+
+void chatLoop() {
+    bool isUppercase = false;
+    updateCaseText(isUppercase);
+    do {
+        kb_Update();
+        if (kb_Data[6] == kb_Clear) {break;}
+        if (kb_Data[6] == kb_Enter) {
+            msleep(100);
+            char recipient_buffer[19] = "global";
+            char message_buffer[200] = "default test message";
+            // TODO: prompt for a recipient and message
+            tinet_send_rtc_message(recipient_buffer, message_buffer);
+            recipient_buffer[0] = '\0';
+            message_buffer[0] = '\0';
+            msleep(100);
+        }
+        if (kb_Data[2] == kb_Alpha) {
+            updateCaseText(isUppercase);
+        }
+        const int read_return = tinet_read_srl(in_buffer);
+        if (read_return > 0) {
+            if (StartsWith(in_buffer, "RTC_CHAT:")) {
+                processNewChatMessage();
+            }
+        } else if (read_return < 0) {
+            printf("read err\n");
+        }
+    } while (has_srl_device && bridge_connected && tcp_connected);
 }
 
 int main() {
     os_ClrHome();
+
+    /* Setting up screen */
+    gfx_Begin();
+    gfx_SetColor(255);
+    gfx_SetTextFGColor(0);
+    gfx_FillScreen(255);
+    gfx_PrintStringXY("NETCHAT", 2, 2);
+    gfx_PrintStringXY("Made with TINET", GFX_LCD_WIDTH - gfx_GetStringWidth("Made with TINET") - 2, 2);
+
+    int setup_log_y_pos = 20;
+
     const TINET_ReturnCode tinet_init_success = tinet_init();
     switch (tinet_init_success) {
         case TINET_SUCCESS:
-            printf("Init success\n");
+            gfx_PrintStringXY("Init success", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
             const char* username = tinet_get_username();
-            printf("username: %s\n", username);
+            gfx_PrintStringXY("Username: ", 10, setup_log_y_pos);
+            gfx_PrintStringXY(username, 10 + gfx_GetStringWidth("Username: "), setup_log_y_pos);
+            setup_log_y_pos += 10;
+            init_success = true;
             break;
         case TINET_NO_KEYFILE:
-            printf("No keyfile!\n");
+            gfx_PrintStringXY("No keyfile!", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
             break;
         case TINET_INVALID_KEYFILE:
-            printf("Invalid keyfile!\n");
+            gfx_PrintStringXY("Invalid keyfile!", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
             break;
         case TINET_SRL_INIT_FAIL:
-            printf("SRL init failed!\n");
+            gfx_PrintStringXY("SRL init failed!", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
         default:
-            printf("Init case not\nimplemented!\n");
+            gfx_PrintStringXY("init case not implemented!", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
         break;
     }
-
-    printf("waiting for srl device..\n");
-    do {
-        kb_Update();
-        usb_HandleEvents();
-        if (has_srl_device) {
-            printf("srl device found\n");
-            break;
-        }
-    } while (kb_Data[6] != kb_Clear);
-
-    const TINET_ReturnCode connect_success = tinet_connect(10);
-    switch (connect_success) {
-        case TINET_SUCCESS:
-            printf("Connect success\n");
-            break;
-        case TINET_TIMEOUT_EXCEEDED:
-            printf("Connect timeout exceeded\n");
-            break;
-        case TINET_TCP_INIT_FAILED:
-            printf("TCP init failed\n");
-            break;
-        default:
-            printf("Unhandled connect response\n");
-            break;
-    }
-
-    if (has_srl_device && bridge_connected && tcp_connected) {
-        printf("Logging in...\n");
-        tinet_login(10);
-        printf("Logged in as %s!\n", tinet_get_username());
-        sleep(1);
-        os_ClrHome();
-        printf("TINET NETCHAT\n");
+    if (init_success) {
+            gfx_PrintStringXY("waiting for serial device..", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
         do {
             kb_Update();
-            if (kb_Data[6] == kb_Clear) {break;}
-            if (kb_Data[6] == kb_Enter) {
-                sleep(1);
-                char recipient_buffer[19];
-                char message_buffer[200];
-                // prompt for a recipient and message
-                os_GetStringInput("recipient: ", recipient_buffer, 19);
-                printf("\n");
-                os_GetStringInput("message: ", message_buffer, 200);
-                printf("\n");
-                tinet_send_rtc_message(recipient_buffer, message_buffer);
-                recipient_buffer[0] = '\0';
-                message_buffer[0] = '\0';
-                sleep(1);
+            usb_HandleEvents();
+            if (has_srl_device) {
+                gfx_PrintStringXY("serial device found!", 10, setup_log_y_pos);
+                setup_log_y_pos += 10;
+                break;
             }
-            const int read_return = tinet_read_srl(in_buffer);
-            if (read_return > 0) {
-                if (StartsWith(in_buffer, "RTC_CHAT:")) {
-                    processNewChatMessage();
-                }
-            } else if (read_return < 0) {
-                printf("read error\n");
-            }
-        } while (has_srl_device && bridge_connected && tcp_connected);
-    } else if (!has_srl_device) {
-        printf("No srl connection\n");
-    } else if (!bridge_connected) {
-        printf("No bridge connection\n");
-    } else if (!tcp_connected) {
-        printf("No TCP connection\n");
+        } while (kb_Data[6] != kb_Clear);
+
+        const TINET_ReturnCode connect_success = tinet_connect(10);
+        switch (connect_success) {
+            case TINET_SUCCESS:
+                gfx_PrintStringXY("connect success!", 10, setup_log_y_pos);
+                setup_log_y_pos += 10;
+                break;
+            case TINET_TIMEOUT_EXCEEDED:
+                gfx_PrintStringXY("connect timeout exceeded!", 10, setup_log_y_pos);
+                setup_log_y_pos += 10;
+                break;
+            case TINET_TCP_INIT_FAILED:
+                gfx_PrintStringXY("TCP init failed!", 10, setup_log_y_pos);
+                setup_log_y_pos += 10;
+                break;
+            default:
+                gfx_PrintStringXY("Unhandled connect response!", 10, setup_log_y_pos);
+                setup_log_y_pos += 10;
+                break;
+        }
+
+        if (has_srl_device && bridge_connected && tcp_connected) {
+            gfx_PrintStringXY("Logging in...", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
+            tinet_login(10);
+            gfx_PrintStringXY("Logged in!", 10, setup_log_y_pos);
+            gfx_PrintStringXY(tinet_get_username(), ((GFX_LCD_WIDTH / 2) - gfx_GetStringWidth(tinet_get_username())), 2);
+            setup_log_y_pos += 10;
+            msleep(150);
+            // clear the logs
+            gfx_Rectangle(0, 15, GFX_LCD_WIDTH, setup_log_y_pos + 10);
+            chatLoop();
+        } else if (!has_srl_device) {
+            gfx_PrintStringXY("No srl device", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
+        } else if (!bridge_connected) {
+            gfx_PrintStringXY("No bridge", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
+        } else if (!tcp_connected) {
+            gfx_PrintStringXY("No TCP", 10, setup_log_y_pos);
+            setup_log_y_pos += 10;
+        }
     }
 
-    printf("quitting..\n");
+    gfx_ZeroScreen();
+    gfx_SetTextScale(2, 2);
+    gfx_PrintStringXY("EXITING..", GFX_LCD_WIDTH / 2 - gfx_GetStringWidth("EXITING.."), GFX_LCD_HEIGHT / 2);
 
     usb_Cleanup();
+    gfx_End();
     return 0;
 }
