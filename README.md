@@ -1,6 +1,8 @@
-# NETCHAT
+# NETCHAT IS IN REWRITE
 
 [![wakatime](https://wakatime.com/badge/github/tkbstudios/netchatclient.svg?style=social)](https://wakatime.com/badge/github/tkbstudios/netchatclient)
+
+## NETCHAT Client is in rewrite to use lwip-ce
 
 ## What is NETCHAT?
 
