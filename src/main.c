@@ -24,8 +24,12 @@
  * please increase this counter as
  * a warning for the next person:
  *
- * Total hours wasted here = 5 hours.
+ * Total hours wasted here = 7 hours.
 */
+
+// TODO: refactor this to use lwip-ce
+// TODO: let the user select the NETCHAT server.
+// TODO: ALWAYS show the default one (netchat.tkbstudios.com:2052)
 
 #include <stdio.h>
 #include <keypadc.h>
@@ -167,7 +171,7 @@ void chatScreen() {
         if (kb_Data[6] == kb_Enter) {
             msleep(100);
             // TODO: prompt for a recipient and message
-            tinet_send_rtc_message(recipient, message);
+            // TODO: actually send the message
             message[0] = '\0';
             msleep(100);
         }
@@ -176,7 +180,8 @@ void chatScreen() {
             updateCaseText(isUppercase);
             msleep(100);
         }
-        const int read_return = tinet_read_srl(in_buffer);
+        // TODO: fetch messages and display them.
+        /*
         if (read_return > 0) {
             if (StartsWith(in_buffer, "RTC_CHAT:")) {
                 processNewChatMessage();
@@ -184,7 +189,8 @@ void chatScreen() {
         } else if (read_return < 0) {
             printf("read err\n");
         }
-    } while (has_srl_device && bridge_connected && tcp_connected);
+        */
+    } while (true);
 }
 
 int main() {
@@ -219,67 +225,25 @@ int main() {
             gfx_PrintStringXY("Invalid keyfile!", 10, setup_log_y_pos);
             setup_log_y_pos += 10;
             break;
-        case TINET_SRL_INIT_FAIL:
-            gfx_PrintStringXY("SRL init failed!", 10, setup_log_y_pos);
-            setup_log_y_pos += 10;
         default:
             gfx_PrintStringXY("init case not implemented!", 10, setup_log_y_pos);
             setup_log_y_pos += 10;
         break;
     }
     if (init_success) {
-            gfx_PrintStringXY("waiting for serial device..", 10, setup_log_y_pos);
-            setup_log_y_pos += 10;
-        do {
-            kb_Update();
-            usb_HandleEvents();
-            if (has_srl_device) {
-                gfx_PrintStringXY("serial device found!", 10, setup_log_y_pos);
-                setup_log_y_pos += 10;
-                break;
-            }
-        } while (kb_Data[6] != kb_Clear);
-
-        gfx_PrintStringXY("Connecting to TINET..", 10, setup_log_y_pos);
-        setup_log_y_pos += 10;
-
-        const TINET_ReturnCode connect_success = tinet_connect(10);
-        switch (connect_success) {
-            case TINET_SUCCESS:
-                gfx_PrintStringXY("connect success!", 10, setup_log_y_pos);
-                setup_log_y_pos += 10;
-                break;
-            case TINET_TIMEOUT_EXCEEDED:
-                gfx_PrintStringXY("connect timeout exceeded!", 10, setup_log_y_pos);
-                setup_log_y_pos += 10;
-                break;
-            case TINET_TCP_INIT_FAILED:
-                gfx_PrintStringXY("TCP init failed!", 10, setup_log_y_pos);
-                setup_log_y_pos += 10;
-                break;
-            default:
-                gfx_PrintStringXY("Unhandled connect response!", 10, setup_log_y_pos);
-                setup_log_y_pos += 10;
-                break;
-        }
-
-        if (has_srl_device && bridge_connected && tcp_connected) {
+        if (true) {
             gfx_PrintStringXY("Logging in...", 10, setup_log_y_pos);
             setup_log_y_pos += 10;
             TINET_ReturnCode login_success = tinet_login(10);
             switch (login_success) {
-            case TINET_SUCCESS:
-                gfx_PrintStringXY("Logged in!", 10, setup_log_y_pos);
-                setup_log_y_pos += 10;
-                break;
-            case TINET_LOGIN_ALREADY_CONNECTED:
-                gfx_PrintStringXY("Already connected!", 10, setup_log_y_pos);
-                setup_log_y_pos += 10;
-                break;
-            default:
-                gfx_PrintStringXY("Unhandled login case.", 10, setup_log_y_pos);
-                setup_log_y_pos += 10;
-                break;
+                case TINET_SUCCESS:
+                    gfx_PrintStringXY("Logged in!", 10, setup_log_y_pos);
+                    setup_log_y_pos += 10;
+                    break;
+                default:
+                    gfx_PrintStringXY("Unhandled login case.", 10, setup_log_y_pos);
+                    setup_log_y_pos += 10;
+                    break;
             }
             msleep(500);
             if (login_success != TINET_SUCCESS) {return 1;}
@@ -293,7 +257,6 @@ int main() {
                 drawHeader();
                 gfx_PrintStringXY("select recipient", ((GFX_LCD_WIDTH / 2) - gfx_GetStringWidth("select recipient")), 2);
                 int y_position = 30;
-                int selection = 0;
                 gfx_SetColor(10);
                 for (int i = 0; i < (int)(sizeof recipients); i++) {
                     gfx_FillRectangle(50, y_position, gfx_GetStringWidth(recipients[i].string) + 2, 12);
@@ -310,16 +273,7 @@ int main() {
                     }
                 } while (kb_Data[6] != kb_Clear);
                 break;
-            } while (has_srl_device && bridge_connected && tcp_connected);
-        } else if (!has_srl_device) {
-            gfx_PrintStringXY("No srl device", 10, setup_log_y_pos);
-            setup_log_y_pos += 10;
-        } else if (!bridge_connected) {
-            gfx_PrintStringXY("No bridge", 10, setup_log_y_pos);
-            setup_log_y_pos += 10;
-        } else if (!tcp_connected) {
-            gfx_PrintStringXY("No TCP", 10, setup_log_y_pos);
-            setup_log_y_pos += 10;
+            } while (true);
         }
     }
 
