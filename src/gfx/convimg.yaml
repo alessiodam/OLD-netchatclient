@@ -235,7 +235,6 @@ outputs:
     include-file: gfx.h
     palettes:
       - global_palette
-      - connection_palette
       - emoji_palette
     converts:
       - keyboard
