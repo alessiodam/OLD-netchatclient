@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Fetch submodules
-        run: git submodule update --init --recursive
-      
       - name: Checkout code
         uses: actions/checkout@main
 
+      - name: Fetch submodules
+        run: git submodule update --init --recursive
+      
       - name: Get repository information
         uses: actions/github-script@v6
         with:
