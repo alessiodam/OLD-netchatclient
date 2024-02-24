@@ -35,14 +35,14 @@ jobs:
       - name: Make GFX
         run: make gfx
 
-      - name: Build TINET.8xp
+      - name: Build NETCHAT.8xp
         run: make
 
-      - name: Upload TINET.8xp
+      - name: Upload NETCHAT.8xp
         uses: actions/upload-artifact@v3
         with:
-          name: TINET.8xp
-          path: bin/TINET.8xp
+          name: NETCHAT.8xp
+          path: bin/NETCHAT.8xp
 
       - name: Set final commit status
         uses: myrotvorets/set-commit-status-action@master
