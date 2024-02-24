@@ -1,0 +1,57 @@
+name: Build and Release Master
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get repository information
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = context.payload.repository.full_name;
+            console.log(`Working on repository: ${repo}`);
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make tar
+
+      - name: Download and extract CEdev
+        run: |
+          curl -sL https://github.com/CE-Programming/toolchain/releases/download/v11.2/CEdev-Linux.tar.gz | tar xz
+      
+      - name: Add CEdev to PATH
+        run: |
+          echo "export PATH=$PATH:$PWD/CEdev/bin" >> $GITHUB_ENV
+          source $GITHUB_ENV
+      
+      - name: Make GFX
+        run: make gfx
+
+      - name: Build NETCHAT.8xp
+        run: make
+
+      - name: Upload NETCHAT.8xp
+        uses: actions/upload-artifact@v2
+        with:
+          name: NETCHAT.8xp
+          path: bin/NETCHAT.8xp
+
+      - name: Set final commit status
+        uses: myrotvorets/set-commit-status-action@master
+        if: always()
+        with:
+          sha: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+

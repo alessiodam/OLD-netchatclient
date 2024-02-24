@@ -1,11 +1,14 @@
-# TINET Calculator client
+# NETCHAT IS IN REWRITE
 
-The official TI-84 Plus CE client for TINET
+[![wakatime](https://wakatime.com/badge/github/tkbstudios/netchatclient.svg?style=social)](https://wakatime.com/badge/github/tkbstudios/netchatclient)
 
-[![wakatime](https://wakatime.com/badge/github/tkbstudios/tinet-calc.svg)](https://wakatime.com/badge/github/tkbstudios/tinet-calc)
-[![Build and Release Master](https://github.com/tkbstudios/tinet-calc/actions/workflows/build-release-master.yml/badge.svg)](https://github.com/tkbstudios/tinet-calc/actions/workflows/build-release-master.yml)
-[![Build and Release Dev](https://github.com/tkbstudios/tinet-calc/actions/workflows/build-release-dev.yml/badge.svg)](https://github.com/tkbstudios/tinet-calc/actions/workflows/build-release-dev.yml)
+## NETCHAT Client is in rewrite to use lwip-ce
+
+## What is NETCHAT?
+
+NETCHAT is a TI-84 Plus CE program powered by TINET!  
+With NETCHAT, you can chat with anyone, when you want (on a calculator)!
 
 ## How to use
 
-This has been moved to the official [docs](https://tinetdocs.tkbstudios.com/)
+To install NETCHAT and setup TINET follow the [official TINET docs](https://tinetdocs.tkbstudios.com/)

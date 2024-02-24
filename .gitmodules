@@ -1,0 +1,3 @@
+[submodule "src/tinet-lib"]
+	path = src/tinet-lib
+	url = https://github.com/tkbstudios/tinet-lib

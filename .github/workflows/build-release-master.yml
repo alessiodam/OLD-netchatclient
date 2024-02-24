@@ -3,72 +3,77 @@ name: Build and Release Master
 on:
   push:
     branches:
-      - master
+      master
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get repository information
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const repo = context.payload.repository.full_name;
-            console.log(`The repository is ${repo}`);
+            console.log(`Working on repository: ${repo}`);
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y make tar
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make tar
 
       - name: Download and extract CEdev
         run: |
-          curl -sL https://github.com/CE-Programming/toolchain/releases/download/nightly/CEdev-Linux-nightly.tar.gz | tar xz
+          curl -sL https://github.com/CE-Programming/toolchain/releases/download/v11.2/CEdev-Linux.tar.gz | tar xz
       
       - name: Add CEdev to PATH
         run: |
-          echo "CEdev/bin" >> $GITHUB_PATH
-          echo $GITHUB_PATH
+          echo "export PATH=$PATH:$PWD/CEdev/bin" >> $GITHUB_ENV
+          source $GITHUB_ENV
       
       - name: Make GFX
         run: make gfx
 
-      - name: Build TINET.8xp
+      - name: Build NETCHAT.8xp
         run: make
 
-      - name: Upload TINET.8xp
-        uses: actions/upload-artifact@v3
+      - name: Upload NETCHAT.8xp
+        uses: actions/upload-artifact@v2
         with:
-          name: TINET.8xp
-          path: bin/TINET.8xp
+          name: NETCHAT.8xp
+          path: bin/NETCHAT.8xp
 
       - name: Set final commit status
         uses: myrotvorets/set-commit-status-action@master
         if: always()
         with:
-          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          sha: ${{ github.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ job.status }}
 
-      - name: Create Development Release
+      - name: Create Stable Release
         id: create_release
-        uses: actions/create-release@v1.0.0
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: V0.0.${{ github.run_number }}
-          release_name: V0.0.${{ github.run_number }}
+          tag_name: V${{ github.run_number }}
+          release_name: V${{ github.run_number }}
           draft: false
           prerelease: false
 
-      - name: Add TINET.8xp to Release
-        uses: actions/upload-release-asset@v1.0.1
+      - name: Add NETCHAT.8xp to Release
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: bin/TINET.8xp
-          asset_name: TINET.8xp
+          asset_path: bin/NETCHAT.8xp
+          asset_name: NETCHAT.8xp
           asset_content_type: application/octet-stream
